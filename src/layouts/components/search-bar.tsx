@@ -3,19 +3,12 @@ import useLocale from "@/locales/use-locale";
 import { useRouter } from "@/routes/hooks";
 import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
-import {
-	CommandDialog,
-	CommandEmpty,
-	CommandGroup,
-	CommandInput,
-	CommandItem,
-	CommandList,
-	CommandSeparator,
-} from "@/ui/command";
+import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandSeparator } from "@/ui/command";
+import { ScrollArea } from "@/ui/scroll-area";
 import { Text } from "@/ui/typography";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useBoolean } from "react-use";
-import { navData } from "../dashboard/nav/nav-config";
+import { useFilteredNavData } from "../dashboard/nav";
 
 interface SearchItem {
 	key: string;
@@ -50,6 +43,7 @@ const SearchBar = () => {
 	const { replace } = useRouter();
 	const [open, setOpen] = useBoolean(false);
 	const [searchQuery, setSearchQuery] = useState("");
+	const navData = useFilteredNavData();
 
 	// Flatten navigation data into searchable items
 	const flattenedItems = useMemo(() => {
@@ -74,14 +68,12 @@ const SearchBar = () => {
 
 		flattenItems(navData);
 		return items;
-	}, []);
+	}, [navData]);
 
-	const searchResult = useMemo(() => {
-		const query = searchQuery.toLowerCase();
-		return flattenedItems.filter(
-			(item) => t(item.label).toLowerCase().includes(query) || item.key.toLowerCase().includes(query),
-		);
-	}, [searchQuery, t, flattenedItems]);
+	// const searchResult = useMemo(() => {
+	// 	const query = searchQuery.toLowerCase();
+	// 	return flattenedItems.filter((item) => t(item.label).toLowerCase().includes(query) || item.key.toLowerCase().includes(query));
+	// }, [searchQuery, t, flattenedItems]);
 
 	useEffect(() => {
 		const down = (e: KeyboardEvent) => {
@@ -105,22 +97,23 @@ const SearchBar = () => {
 
 	return (
 		<>
-			<Button variant="ghost" className="bg-secondary px-2 rounded-lg" size="sm" onClick={() => setOpen(true)}>
-				<div className="flex items-center justify-center gap-2">
+			<Button variant="ghost" className="bg-action-selected px-2 rounded-lg" size="sm" onClick={() => setOpen(true)}>
+				<div className="flex items-center justify-center gap-4">
 					<Icon icon="local:ic-search" size="20" />
-					<kbd className="flex h-6 items-center justify-center rounded-md bg-common-white px-1.5 font-bold text-gray-800">
-						⌘K
+					<kbd className="flex items-center justify-center rounded-md bg-primary/80 text-common-white px-1.5 py-0.5 text-sm font-semibold">
+						<Icon icon="qlementine-icons:key-cmd-16" />
+						<span>K</span>
 					</kbd>
 				</div>
 			</Button>
 
 			<CommandDialog open={open} onOpenChange={setOpen}>
-				<CommandInput placeholder="Search..." value={searchQuery} onValueChange={setSearchQuery} />
-				<CommandList className="min-h-[400px]">
+				<CommandInput placeholder="Type a command or search..." value={searchQuery} onValueChange={setSearchQuery} />
+				<ScrollArea className="h-[400px]">
 					<CommandEmpty>No results found.</CommandEmpty>
-					<CommandGroup>
-						{searchResult.map(({ key, label }) => (
-							<CommandItem key={key} onSelect={() => handleSelect(key)} className="flex flex-col items-start py-2">
+					<CommandGroup heading="Navigations">
+						{flattenedItems.map(({ key, label }) => (
+							<CommandItem key={key} onSelect={() => handleSelect(key)} className="flex flex-col items-start">
 								<div className="font-medium">
 									<HighlightText text={t(label)} query={searchQuery} />
 								</div>
@@ -130,20 +123,20 @@ const SearchBar = () => {
 							</CommandItem>
 						))}
 					</CommandGroup>
-				</CommandList>
+				</ScrollArea>
 				<CommandSeparator />
 				<div className="flex flex-wrap text-text-primary p-2 justify-end gap-2">
 					<div className="flex items-center gap-1">
-						<Badge variant="outline">↑</Badge>
-						<Badge variant="outline">↓</Badge>
+						<Badge variant="info">↑</Badge>
+						<Badge variant="info">↓</Badge>
 						<Text variant="caption">to navigate</Text>
 					</div>
 					<div className="flex items-center gap-1">
-						<Badge variant="outline">↵</Badge>
+						<Badge variant="info">↵</Badge>
 						<Text variant="caption">to select</Text>
 					</div>
 					<div className="flex items-center gap-1">
-						<Badge variant="outline">ESC</Badge>
+						<Badge variant="info">ESC</Badge>
 						<Text variant="caption">to close</Text>
 					</div>
 				</div>

@@ -1,15 +1,7 @@
 import type { NavItemDataProps } from "@/components/nav";
-import { navData } from "@/layouts/dashboard/nav";
+import { useFilteredNavData } from "@/layouts/dashboard/nav";
 import useLocale from "@/locales/use-locale";
-import {
-	Breadcrumb,
-	BreadcrumbEllipsis,
-	BreadcrumbItem,
-	BreadcrumbLink,
-	BreadcrumbList,
-	BreadcrumbPage,
-	BreadcrumbSeparator,
-} from "@/ui/breadcrumb";
+import { Breadcrumb, BreadcrumbEllipsis, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/ui/breadcrumb";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
 import * as React from "react";
@@ -36,6 +28,7 @@ interface BreadcrumbItemData {
 export default function BreadCrumb({ maxItems = 3 }: BreadCrumbProps) {
 	const { t } = useLocale();
 	const matches = useMatches();
+	const navData = useFilteredNavData();
 
 	const findPathInNavData = useCallback((path: string, items: NavItem[]): NavItem[] => {
 		for (const item of items) {
@@ -76,7 +69,7 @@ export default function BreadCrumb({ maxItems = 3 }: BreadCrumbProps) {
 				};
 			})
 			.filter((item): item is BreadcrumbItemData => item !== null);
-	}, [matches, t, findPathInNavData]);
+	}, [matches, t, findPathInNavData, navData]);
 
 	const renderBreadcrumbItem = (item: BreadcrumbItemData, isLast: boolean) => {
 		const hasItems = item.items && item.items.length > 0;

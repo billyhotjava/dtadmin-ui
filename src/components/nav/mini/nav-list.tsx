@@ -9,6 +9,10 @@ export function NavList({ data, depth = 0 }: NavListProps) {
 	const location = useLocation();
 	const isActive = location.pathname.includes(data.path);
 
+	if (data.hidden) {
+		return null;
+	}
+
 	const renderRootNavItem = () => {
 		return (
 			<NavRootItem
@@ -19,6 +23,7 @@ export function NavList({ data, depth = 0 }: NavListProps) {
 				caption={data.caption}
 				info={data.info}
 				icon={data.icon}
+				auth={data.auth}
 				// state
 				disabled={data.disabled}
 				active={isActive}
@@ -39,6 +44,7 @@ export function NavList({ data, depth = 0 }: NavListProps) {
 				caption={data.caption}
 				info={data.info}
 				icon={data.icon}
+				auth={data.auth}
 				// state
 				disabled={data.disabled}
 				active={isActive}

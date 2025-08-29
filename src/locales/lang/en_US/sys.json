@@ -69,12 +69,12 @@
 			"signInFormDescription": "Enter your username to login to your account",
 			"noAccount": "Don't have an account?"
 		},
-		"menu": {
+		"nav": {
+			"dashboard": "Dashboard",
 			"pages": "Pages",
 			"others": "Others",
 			"ui": "UI",
 			"custom_ui_components": "Custom UI Components",
-			"dashboard": "Dashboard",
 			"analysis": "Analysis",
 			"animate": "Animate",
 			"blank": "Blank",
@@ -92,13 +92,15 @@
 				"index": "Error Page"
 			},
 			"external_link": "External Link",
-			"frame": "Item External",
+			"link": "Item External",
 			"functions": "Functions",
 			"i18n": "Multi Language",
 			"icon": "Icon",
 			"iframe": "Iframe",
 			"kanban": "Kanban",
 			"label": "Item Label",
+			"permission": "Permission",
+			"permission.page_test": "Page Permission Test",
 			"management": "Management",
 			"markdown": "Markdown",
 			"menulevel": {
@@ -145,10 +147,10 @@
 			"mode": "Mode",
 			"multiTab": "Multi Tab",
 			"page": "Page",
-			"presetThemes": "Preset Themes",
+			"presetThemes": "Presets",
 			"size": "Size",
 			"stretch": "Stretch",
-			"stretchTip": "Only available at large resolutions > 1600px (xl)",
+			"stretchTip": "Only available when the screen width is greater than 1280px (xl)",
 			"title": "Settings"
 		},
 		"tab": {

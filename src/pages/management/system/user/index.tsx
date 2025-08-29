@@ -1,4 +1,4 @@
-import { USER_LIST } from "@/_mock/assets";
+// import { USER_LIST } from "@/_mock/assets";
 import { Icon } from "@/components/icon";
 import { usePathname, useRouter } from "@/routes/hooks";
 import { Badge } from "@/ui/badge";
@@ -6,12 +6,14 @@ import { Button } from "@/ui/button";
 import { Card, CardContent, CardHeader } from "@/ui/card";
 import { Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import type { Role, UserInfo } from "#/entity";
+import type { Role_Old, UserInfo } from "#/entity";
 import { BasicStatus } from "#/enum";
 
-const USERS: UserInfo[] = USER_LIST as UserInfo[];
+// TODO: fix
+// const USERS: UserInfo[] = USER_LIST as UserInfo[];
+const USERS: UserInfo[] = [];
 
-export default function RolePage() {
+export default function UserPage() {
 	const { push } = useRouter();
 	const pathname = usePathname();
 
@@ -37,18 +39,14 @@ export default function RolePage() {
 			dataIndex: "role",
 			align: "center",
 			width: 120,
-			render: (role: Role) => <Badge variant="info">{role.name}</Badge>,
+			render: (role: Role_Old) => <Badge variant="info">{role.name}</Badge>,
 		},
 		{
 			title: "Status",
 			dataIndex: "status",
 			align: "center",
 			width: 120,
-			render: (status) => (
-				<Badge variant={status === BasicStatus.DISABLE ? "error" : "success"}>
-					{status === BasicStatus.DISABLE ? "Disable" : "Enable"}
-				</Badge>
-			),
+			render: (status) => <Badge variant={status === BasicStatus.DISABLE ? "error" : "success"}>{status === BasicStatus.DISABLE ? "Disable" : "Enable"}</Badge>,
 		},
 		{
 			title: "Action",
@@ -86,14 +84,7 @@ export default function RolePage() {
 				</div>
 			</CardHeader>
 			<CardContent>
-				<Table
-					rowKey="id"
-					size="small"
-					scroll={{ x: "max-content" }}
-					pagination={false}
-					columns={columns}
-					dataSource={USERS}
-				/>
+				<Table rowKey="id" size="small" scroll={{ x: "max-content" }} pagination={false} columns={columns} dataSource={USERS} />
 			</CardContent>
 		</Card>
 	);

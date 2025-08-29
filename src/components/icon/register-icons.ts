@@ -23,12 +23,12 @@ let iconCollection: Record<string, IconifyIcon> | null = null;
  * Auto import all SVG files to Iconify local collection
  *
  * @example
- *
  * ├── src
  * │   ├── assets
  * │   │   └── icons
  * │   │       └── icon-name.svg
  *
+ * @usage
  * import { Icon } from "@/components/icon";
  * <Icon icon="local:icon-name" />
  */
@@ -39,7 +39,11 @@ export default async function registerLocalIcons() {
 		return;
 	}
 
-	const svgModules = import.meta.glob("../../assets/icons/*.svg", { as: "raw", eager: true });
+	const svgModules = import.meta.glob("../../assets/icons/*.svg", {
+		query: "?raw",
+		eager: true,
+		import: "default",
+	});
 	const icons: Record<string, IconifyIcon> = {};
 
 	for (const [path, svgContent] of Object.entries(svgModules)) {

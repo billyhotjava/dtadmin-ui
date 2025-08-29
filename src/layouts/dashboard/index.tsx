@@ -1,30 +1,32 @@
 import Logo from "@/components/logo";
 import { down, useMediaQuery } from "@/hooks";
 import { useSettings } from "@/store/settingStore";
-import { cn } from "@/utils";
 import { ThemeLayout } from "#/enum";
 import Header from "./header";
 import Main from "./main";
-import { NavHorizontalLayout, NavMobileLayout, NavToggleButton, NavVerticalLayout, navData } from "./nav";
+import { NavHorizontalLayout, NavMobileLayout, NavVerticalLayout, useFilteredNavData } from "./nav";
 
-// Dashboard Layout
 export default function DashboardLayout() {
 	const isMobile = useMediaQuery(down("md"));
-	const { themeLayout } = useSettings();
 
 	return (
-		<div
-			data-slot="slash-layout-root"
-			className={cn("w-full min-h-svh flex bg-background", {
-				"flex-col": isMobile || themeLayout === ThemeLayout.Horizontal,
-			})}
-		>
+		<div data-slot="slash-layout-root" className="w-full min-h-screen bg-background">
 			{isMobile ? <MobileLayout /> : <PcLayout />}
 		</div>
 	);
 }
 
-// Pc Layout
+function MobileLayout() {
+	const navData = useFilteredNavData();
+	return (
+		<>
+			{/* Sticky Header */}
+			<Header leftSlot={<NavMobileLayout data={navData} />} />
+			<Main />
+		</>
+	);
+}
+
 function PcLayout() {
 	const { themeLayout } = useSettings();
 
@@ -33,45 +35,41 @@ function PcLayout() {
 }
 
 function PcHorizontalLayout() {
+	const navData = useFilteredNavData();
 	return (
-		<div
-			data-slot="slash-layout-content"
-			className={cn("w-full h-screen flex flex-col transition-all duration-300 ease-in-out")}
-		>
+		<>
+			{/* Sticky Header */}
 			<Header leftSlot={<Logo />} />
+			{/* Sticky Nav */}
 			<NavHorizontalLayout data={navData} />
+
 			<Main />
-		</div>
+		</>
 	);
 }
 
 function PcVerticalLayout() {
 	const settings = useSettings();
 	const { themeLayout } = settings;
+	const navData = useFilteredNavData();
+
+	const mainPaddingLeft =
+		themeLayout === ThemeLayout.Vertical ? "var(--layout-nav-width)" : "var(--layout-nav-width-mini)";
 
 	return (
 		<>
+			{/* Fixed Header */}
 			<NavVerticalLayout data={navData} />
+
 			<div
-				data-slot="slash-layout-content"
-				className={cn("w-full h-screen flex flex-col transition-[padding] duration-300 ease-in-out", {
-					"pl-[var(--layout-nav-width)]": themeLayout === ThemeLayout.Vertical,
-					"pl-[var(--layout-nav-width-mini)]": themeLayout === ThemeLayout.Mini,
-				})}
+				className="relative w-full min-h-screen flex flex-col transition-[padding] duration-300 ease-in-out"
+				style={{
+					paddingLeft: mainPaddingLeft,
+				}}
 			>
-				<Header leftSlot={<NavToggleButton />} />
+				<Header />
 				<Main />
 			</div>
-		</>
-	);
-}
-
-// Mobile Layout
-function MobileLayout() {
-	return (
-		<>
-			<Header leftSlot={<NavMobileLayout data={navData} />} />
-			<Main />
 		</>
 	);
 }

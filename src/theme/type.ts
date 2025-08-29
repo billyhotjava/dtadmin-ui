@@ -182,9 +182,11 @@ export const themeTokens = {
 	zIndex: {
 		appBar: null,
 		drawer: null,
+		nav: null,
 		modal: null,
 		snackbar: null,
 		tooltip: null,
+		scrollbar: null,
 	},
 };
 

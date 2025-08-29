@@ -9,25 +9,18 @@ const Page500 = lazy(() => import("@/pages/sys/error/Page500"));
 
 export const mainRoutes: RouteObject[] = [
 	{
+		path: "/",
 		element: (
-			<Suspense fallback={<LineLoading />}>
-				<Outlet />
-			</Suspense>
+			<SimpleLayout>
+				<Suspense fallback={<LineLoading />}>
+					<Outlet />
+				</Suspense>
+			</SimpleLayout>
 		),
 		children: [
-			{
-				path: "/",
-				element: (
-					<SimpleLayout>
-						<Outlet />
-					</SimpleLayout>
-				),
-				children: [
-					{ path: "500", element: <Page500 /> },
-					{ path: "404", element: <Page404 /> },
-					{ path: "403", element: <Page403 /> },
-				],
-			},
+			{ path: "500", element: <Page500 /> },
+			{ path: "404", element: <Page404 /> },
+			{ path: "403", element: <Page403 /> },
 		],
 	},
 ];

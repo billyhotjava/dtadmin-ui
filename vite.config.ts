@@ -7,7 +7,7 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig(({ mode }) => {
 	const env = loadEnv(mode, process.cwd(), "");
-	const base = env.VITE_APP_BASE_PATH || "/";
+	const base = env.VITE_APP_PUBLIC_PATH || "/";
 	const isProduction = mode === "production";
 
 	return {
@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => {
 					open: true,
 					gzipSize: true,
 					brotliSize: true,
-					template: "treemap", // 使用树形图更直观
+					template: "treemap",
 				}),
 		].filter(Boolean),
 
@@ -53,7 +53,7 @@ export default defineConfig(({ mode }) => {
 				output: {
 					manualChunks: {
 						"vendor-core": ["react", "react-dom", "react-router"],
-						"vendor-ui": ["antd", "@ant-design/icons", "@ant-design/cssinjs", "styled-components"],
+						"vendor-ui": ["antd", "@ant-design/cssinjs", "styled-components"],
 						"vendor-utils": ["axios", "dayjs", "i18next", "zustand", "@iconify/react"],
 						"vendor-charts": ["apexcharts", "react-apexcharts"],
 					},
@@ -61,13 +61,11 @@ export default defineConfig(({ mode }) => {
 			},
 		},
 
-		// 优化依赖预构建
 		optimizeDeps: {
-			include: ["react", "react-dom", "react-router", "antd", "@ant-design/icons", "axios", "dayjs"],
-			exclude: ["@iconify/react"], // 排除不需要预构建的依赖
+			include: ["react", "react-dom", "react-router", "antd", "axios", "dayjs"],
+			exclude: ["@iconify/react"],
 		},
 
-		// esbuild 优化配置
 		esbuild: {
 			drop: isProduction ? ["console", "debugger"] : [],
 			legalComments: "none",

@@ -24,6 +24,10 @@
     border-color: rgba(var(--colors-palette-gray-500Channel) / var(--opacity-border)) ;
   }
 
+  body {
+    background-color: var(--background);
+  }
+
 }
 
 @theme  {
@@ -128,7 +132,6 @@
   --sidebar-border: rgba(var(--colors-palette-gray-500Channel)/ var(--opacity-border));
   --sidebar-ring: var(--colors-palette-primary-default);
 }
-
 
 /* slash layout */
 :root{

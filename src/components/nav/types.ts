@@ -1,7 +1,13 @@
+export type NavItemOptionsProps = {
+	depth?: number;
+	hasChild?: boolean;
+};
+
 export type NavItemStateProps = {
 	open?: boolean;
 	active?: boolean;
 	disabled?: boolean;
+	hidden?: boolean;
 };
 
 export type NavItemDataProps = {
@@ -10,29 +16,21 @@ export type NavItemDataProps = {
 	icon?: string | React.ReactNode;
 	info?: React.ReactNode;
 	caption?: string;
-	allowedRoles?: string | string[];
+	auth?: string[];
 	children?: NavItemDataProps[];
-	disabled?: boolean;
-};
-
-export type NavItemOptionsProps = {
-	depth?: number;
-	hasChild?: boolean;
-	externalLink?: boolean;
-	enabledRootRedirect?: boolean;
-};
+} & NavItemStateProps;
 
 /**
  * Item
  */
-export type NavItemProps = React.ComponentProps<"div"> & NavItemDataProps & NavItemStateProps & NavItemOptionsProps;
+export type NavItemProps = React.ComponentProps<"div"> & NavItemDataProps & NavItemOptionsProps;
 
 /**
  * List
  */
-export type NavListProps = Pick<NavItemProps, "depth" | "enabledRootRedirect"> & {
+export type NavListProps = Pick<NavItemProps, "depth"> & {
 	data: NavItemDataProps;
-	checkPermissions?: (allowedRoles?: NavItemProps["allowedRoles"]) => boolean;
+	authenticate?: (auth?: NavItemProps["auth"]) => boolean;
 };
 
 /**

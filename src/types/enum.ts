@@ -3,7 +3,7 @@ export enum BasicStatus {
 	ENABLE = 1,
 }
 
-export enum ResultEnum {
+export enum ResultStatus {
 	SUCCESS = 0,
 	ERROR = -1,
 	TIMEOUT = 401,
@@ -52,9 +52,10 @@ export enum MultiTabOperation {
 }
 
 export enum PermissionType {
-	CATALOGUE = 0,
-	MENU = 1,
-	BUTTON = 2,
+	GROUP = 0,
+	CATALOGUE = 1,
+	MENU = 2,
+	COMPONENT = 3,
 }
 
 export enum HtmlDataAttribute {

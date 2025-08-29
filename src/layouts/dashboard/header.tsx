@@ -20,8 +20,10 @@ export default function Header({ leftSlot }: HeaderProps) {
 		<header
 			data-slot="slash-layout-header"
 			className={cn(
-				"sticky z-app-bar top-0 right-0 left-auto flex items-center bg-background justify-between px-2 ml-[1px]",
-				"h-[var(--layout-header-height)] grow-0 shrink-0",
+				"sticky top-0 left-0 right-0 z-app-bar",
+				"flex items-center justify-between px-2 grow-0 shrink-0",
+				"bg-background/60 backdrop-blur-xl",
+				"h-[var(--layout-header-height)] ",
 			)}
 		>
 			<div className="flex items-center">
