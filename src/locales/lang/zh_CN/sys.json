@@ -85,20 +85,14 @@
 		},
 		"nav": {
 			"dashboard": "仪表板",
-			"pages": "页面",
 			"others": "其他",
 			"ui": "UI",
 			"custom_ui_components": "自定义UI组件",
 			"workbench": "工作台",
 			"analysis": "分析",
-			"management": "管理",
-			"user": {
-				"index": "用户",
-				"profile": "个人资料",
-				"account": "账户"
-			},
-			"system": {
-				"index": "系统",
+			"management": "系统管理",
+			"usermgmt": {
+				"index": "用户中心",
 				"organization": "组织",
 				"permission": "权限",
 				"role": "角色",

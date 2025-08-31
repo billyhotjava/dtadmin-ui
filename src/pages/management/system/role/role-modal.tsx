@@ -1,7 +1,9 @@
 import { Tree } from "antd";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-
+import type { Permission_Old, Role_Old } from "#/entity";
+import { BasicStatus } from "#/enum";
+//import { PERMISSION_LIST } from "@/_mock/assets";
 import { PERMISSION_LIST } from "@/_mock/assets";
 import { Button } from "@/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/ui/dialog";
@@ -11,9 +13,6 @@ import { Label } from "@/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/ui/radio-group";
 import { Textarea } from "@/ui/textarea";
 import { flattenTrees } from "@/utils/tree";
-
-import type { Permission_Old, Role_Old } from "#/entity";
-import { BasicStatus } from "#/enum";
 
 export type RoleModalProps = {
 	formValue: Role_Old;
@@ -108,7 +107,10 @@ export function RoleModal({ title, show, formValue, onOk, onCancel }: RoleModalP
 									<FormLabel className="text-right">Status</FormLabel>
 									<div className="col-span-3">
 										<FormControl>
-											<RadioGroup onValueChange={(value) => field.onChange(Number(value))} defaultValue={String(field.value)}>
+											<RadioGroup
+												onValueChange={(value) => field.onChange(Number(value))}
+												defaultValue={String(field.value)}
+											>
 												<div className="flex items-center space-x-2">
 													<RadioGroupItem value={String(BasicStatus.ENABLE)} id="r1" />
 													<Label htmlFor="r1">Enable</Label>

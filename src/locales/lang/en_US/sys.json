@@ -71,7 +71,6 @@
 		},
 		"nav": {
 			"dashboard": "Dashboard",
-			"pages": "Pages",
 			"others": "Others",
 			"ui": "UI",
 			"custom_ui_components": "Custom UI Components",
@@ -101,7 +100,7 @@
 			"label": "Item Label",
 			"permission": "Permission",
 			"permission.page_test": "Page Permission Test",
-			"management": "Management",
+			"management": "System Management",
 			"markdown": "Markdown",
 			"menulevel": {
 				"1a": "Menu Level 1a",
@@ -117,8 +116,8 @@
 				"index": "Menu Level"
 			},
 			"scroll": "Scroll",
-			"system": {
-				"index": "System",
+			"usermgmt": {
+				"index": "User Management",
 				"organization": "Organization",
 				"permission": "Permission",
 				"role": "Role",

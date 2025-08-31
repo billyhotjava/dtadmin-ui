@@ -54,7 +54,7 @@ const convertToRoute = (items: MenuTree[], parent?: MenuTree): RouteObject[] => 
 			}
 		}
 
-		// if catalogue, process children
+		// if catalogue, process Dhildren
 		if (item.type === PermissionType.CATALOGUE) {
 			const children = item.children || [];
 			if (children.length > 0) {
@@ -93,5 +93,6 @@ const convertToRoute = (items: MenuTree[], parent?: MenuTree): RouteObject[] => 
 
 export function getBackendDashboardRoutes() {
 	const backendDashboardRoutes = convertToRoute(convertFlatToTree(DB_MENU));
+	console.log("current menu", DB_MENU);
 	return backendDashboardRoutes;
 }
