@@ -1,6 +1,6 @@
+import styled from "styled-components";
 import { themeVars } from "@/theme/theme.css";
 import { rgbAlpha } from "@/utils/theme";
-import styled from "styled-components";
 
 const StyledEditor = styled.div`
   h1 {

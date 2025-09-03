@@ -1,5 +1,5 @@
-import { useUserToken } from "@/store/userStore";
 import { useCallback, useEffect } from "react";
+import { useUserToken } from "@/store/userStore";
 import { useRouter } from "../hooks";
 
 type Props = {

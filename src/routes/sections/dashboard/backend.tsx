@@ -1,9 +1,9 @@
+import type { RouteObject } from "react-router";
+import { Navigate } from "react-router";
 import { DB_MENU } from "@/_mock/assets_backup";
 import type { MenuMetaInfo, MenuTree } from "@/types/entity";
 import { PermissionType } from "@/types/enum";
 import { convertFlatToTree } from "@/utils/tree";
-import type { RouteObject } from "react-router";
-import { Navigate } from "react-router";
 import { Component } from "./utils";
 
 /**

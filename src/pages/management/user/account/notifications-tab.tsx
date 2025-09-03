@@ -1,7 +1,7 @@
+import { toast } from "sonner";
 import { Button } from "@/ui/button";
 import { Card, CardContent, CardFooter } from "@/ui/card";
 import { Switch } from "@/ui/switch";
-import { toast } from "sonner";
 
 export default function NotificationsTab() {
 	const handleClick = () => {

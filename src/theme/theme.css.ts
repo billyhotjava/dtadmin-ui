@@ -1,6 +1,6 @@
+import { assignVars, createGlobalTheme, createThemeContract, globalStyle } from "@vanilla-extract/css";
 import { HtmlDataAttribute, ThemeColorPresets, ThemeMode } from "@/types/enum";
 import { addColorChannels } from "@/utils/theme";
-import { assignVars, createGlobalTheme, createThemeContract, globalStyle } from "@vanilla-extract/css";
 import { baseThemeTokens } from "./tokens/base";
 import { darkColorTokens, lightColorTokens, presetsColors } from "./tokens/color";
 import { darkShadowTokens, lightShadowTokens } from "./tokens/shadow";

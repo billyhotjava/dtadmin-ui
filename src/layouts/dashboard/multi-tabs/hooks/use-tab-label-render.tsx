@@ -1,6 +1,6 @@
-import { USER_LIST } from "@/_mock/assets";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { USER_LIST } from "@/_mock/assets";
 import type { KeepAliveTab } from "../types";
 
 export function useTabLabelRender() {

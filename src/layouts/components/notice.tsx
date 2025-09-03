@@ -1,3 +1,5 @@
+import { faker } from "@faker-js/faker";
+import { type CSSProperties, useState } from "react";
 import CyanBlur from "@/assets/images/background/cyan-blur.png";
 import RedBlur from "@/assets/images/background/red-blur.png";
 import { AvatarGroup } from "@/components/avatar-group";
@@ -10,8 +12,6 @@ import { ScrollArea } from "@/ui/scroll-area";
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/tabs";
 import { Text } from "@/ui/typography";
-import { faker } from "@faker-js/faker";
-import { type CSSProperties, useState } from "react";
 
 export default function NoticeButton() {
 	const [drawerOpen, setDrawerOpen] = useState(false);

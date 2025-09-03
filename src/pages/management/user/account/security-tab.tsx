@@ -1,9 +1,9 @@
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { Button } from "@/ui/button";
 import { Card, CardContent } from "@/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/ui/form";
 import { Input } from "@/ui/input";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
 
 type FieldType = {
 	oldPassword: string;

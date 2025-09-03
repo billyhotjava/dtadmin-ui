@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import { DB_USER } from "@/_mock/assets_backup";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { useAuthCheck } from "@/components/auth/use-auth";
@@ -7,7 +8,6 @@ import { Button } from "@/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/ui/tabs";
 import { Text } from "@/ui/typography";
-import { Link } from "react-router";
 
 const Component_Auth_1 = `
 <AuthGuard

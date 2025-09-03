@@ -1,91 +1,326 @@
-// import { USER_LIST } from "@/_mock/assets";
+import { Modal, Table } from "antd";
+import type { ColumnsType } from "antd/es/table";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import type { KeycloakUser, PaginationParams, UserTableRow } from "#/keycloak";
+import { KeycloakUserService } from "@/api/services/keycloakService";
 import { Icon } from "@/components/icon";
 import { usePathname, useRouter } from "@/routes/hooks";
 import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
 import { Card, CardContent, CardHeader } from "@/ui/card";
-import { Table } from "antd";
-import type { ColumnsType } from "antd/es/table";
-import type { Role_Old, UserInfo } from "#/entity";
-import { BasicStatus } from "#/enum";
-
-// TODO: fix
-// const USERS: UserInfo[] = USER_LIST as UserInfo[];
-const USERS: UserInfo[] = [];
+import { Input } from "@/ui/input";
+import ResetPasswordModal from "./reset-password-modal";
+import UserModal from "./user-modal";
 
 export default function UserPage() {
 	const { push } = useRouter();
 	const pathname = usePathname();
 
-	const columns: ColumnsType<UserInfo> = [
+	const [users, setUsers] = useState<UserTableRow[]>([]);
+	const [loading, setLoading] = useState(false);
+	const [searchValue, setSearchValue] = useState("");
+	const [pagination, setPagination] = useState<PaginationParams>({
+		current: 1,
+		pageSize: 10,
+		total: 0,
+	});
+
+	// Modal状态
+	const [userModal, setUserModal] = useState<{
+		open: boolean;
+		mode: "create" | "edit";
+		user?: KeycloakUser;
+	}>({ open: false, mode: "create" });
+
+	const [resetPasswordModal, setResetPasswordModal] = useState<{
+		open: boolean;
+		userId: string;
+		username: string;
+	}>({ open: false, userId: "", username: "" });
+
+	// 加载用户列表
+	const loadUsers = useCallback(async (params?: { current?: number; pageSize?: number; search?: string }) => {
+		setLoading(true);
+		try {
+			const { current = 1, pageSize = 10, search } = params || {};
+
+			let usersData: KeycloakUser[];
+			if (search) {
+				usersData = await KeycloakUserService.searchUsers(search);
+			} else {
+				usersData = await KeycloakUserService.getAllUsers({
+					first: (current - 1) * pageSize,
+					max: pageSize,
+				});
+			}
+
+			const tableData: UserTableRow[] = usersData.map((user) => ({
+				...user,
+				key: user.id || user.username,
+			}));
+
+			setUsers(tableData);
+			setPagination((prev) => ({
+				...prev,
+				current,
+				pageSize,
+				total: search ? tableData.length : Math.max(tableData.length, prev.total || 0),
+			}));
+		} catch (error: any) {
+			console.error("Error loading users:", error);
+			toast.error(`加载用户列表失败: ${error.message || "未知错误"}`);
+		} finally {
+			setLoading(false);
+		}
+	}, []);
+
+	// 搜索用户
+	const handleSearch = () => {
+		if (searchValue.trim()) {
+			loadUsers({ search: searchValue.trim() });
+		} else {
+			loadUsers({ current: 1, pageSize: pagination.pageSize });
+		}
+	};
+
+	// 删除用户
+	const handleDelete = (user: KeycloakUser) => {
+		Modal.confirm({
+			title: "确认删除",
+			content: `确定要删除用户 "${user.username}" 吗？此操作无法撤销。`,
+			okText: "删除",
+			cancelText: "取消",
+			okButtonProps: { danger: true },
+			onOk: async () => {
+				try {
+					if (!user.id) throw new Error("用户ID不存在");
+					await KeycloakUserService.deleteUser(user.id);
+					toast.success("用户删除成功");
+					loadUsers({ current: pagination.current, pageSize: pagination.pageSize });
+				} catch (error: any) {
+					console.error("Error deleting user:", error);
+					toast.error(`删除用户失败: ${error.message || "未知错误"}`);
+				}
+			},
+		});
+	};
+
+	// 切换用户启用状态
+	const handleToggleEnabled = async (user: KeycloakUser) => {
+		try {
+			if (!user.id) throw new Error("用户ID不存在");
+
+			await KeycloakUserService.setUserEnabled(user.id, { enabled: !user.enabled });
+			toast.success(`用户已${user.enabled ? "禁用" : "启用"}`);
+			loadUsers({ current: pagination.current, pageSize: pagination.pageSize });
+		} catch (error: any) {
+			console.error("Error toggling user enabled:", error);
+			toast.error(`操作失败: ${error.message || "未知错误"}`);
+		}
+	};
+
+	// 表格列定义
+	const columns: ColumnsType<UserTableRow> = [
 		{
-			title: "Name",
-			dataIndex: "name",
-			width: 300,
-			render: (_, record) => {
-				return (
-					<div className="flex">
-						<img alt="" src={record.avatar} className="h-10 w-10 rounded-full" />
-						<div className="ml-2 flex flex-col">
-							<span className="text-sm">{record.username}</span>
-							<span className="text-xs text-text-secondary">{record.email}</span>
-						</div>
+			title: "用户信息",
+			dataIndex: "username",
+			width: 250,
+			render: (_, record) => (
+				<div className="flex items-center">
+					<div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-medium">
+						{record.username.charAt(0).toUpperCase()}
 					</div>
-				);
+					<div className="ml-3">
+						<div className="font-medium">{record.username}</div>
+						<div className="text-sm text-muted-foreground">{record.email}</div>
+					</div>
+				</div>
+			),
+		},
+		{
+			title: "姓名",
+			dataIndex: "name",
+			width: 150,
+			render: (_, record) => {
+				const fullName = [record.firstName, record.lastName].filter(Boolean).join(" ");
+				return fullName || "-";
 			},
 		},
 		{
-			title: "Role",
-			dataIndex: "role",
-			align: "center",
-			width: 120,
-			render: (role: Role_Old) => <Badge variant="info">{role.name}</Badge>,
-		},
-		{
-			title: "Status",
-			dataIndex: "status",
-			align: "center",
-			width: 120,
-			render: (status) => <Badge variant={status === BasicStatus.DISABLE ? "error" : "success"}>{status === BasicStatus.DISABLE ? "Disable" : "Enable"}</Badge>,
-		},
-		{
-			title: "Action",
-			key: "operation",
+			title: "状态",
+			dataIndex: "enabled",
 			align: "center",
 			width: 100,
+			render: (enabled: boolean) => (
+				<Badge variant={enabled ? "success" : "destructive"}>{enabled ? "启用" : "禁用"}</Badge>
+			),
+		},
+		{
+			title: "邮箱验证",
+			dataIndex: "emailVerified",
+			align: "center",
+			width: 100,
+			render: (verified: boolean) => (
+				<Badge variant={verified ? "success" : "secondary"}>{verified ? "已验证" : "未验证"}</Badge>
+			),
+		},
+		{
+			title: "创建时间",
+			dataIndex: "createdTimestamp",
+			width: 150,
+			render: (timestamp: number) => {
+				if (!timestamp) return "-";
+				return new Date(timestamp).toLocaleString("zh-CN");
+			},
+		},
+		{
+			title: "操作",
+			key: "operation",
+			align: "center",
+			width: 200,
+			fixed: "right",
 			render: (_, record) => (
-				<div className="flex w-full justify-center text-gray-500">
+				<div className="flex items-center justify-center gap-1">
+					<Button variant="ghost" size="sm" title="查看详情" onClick={() => push(`${pathname}/${record.id}`)}>
+						<Icon icon="mdi:eye" size={16} />
+					</Button>
 					<Button
 						variant="ghost"
-						size="icon"
-						onClick={() => {
-							push(`${pathname}/${record.id}`);
-						}}
+						size="sm"
+						title="编辑用户"
+						onClick={() => setUserModal({ open: true, mode: "edit", user: record })}
 					>
-						<Icon icon="mdi:card-account-details" size={18} />
+						<Icon icon="solar:pen-bold-duotone" size={16} />
 					</Button>
-					<Button variant="ghost" size="icon" onClick={() => {}}>
-						<Icon icon="solar:pen-bold-duotone" size={18} />
+					<Button
+						variant="ghost"
+						size="sm"
+						title="重置密码"
+						onClick={() =>
+							setResetPasswordModal({
+								open: true,
+								userId: record.id!,
+								username: record.username,
+							})
+						}
+					>
+						<Icon icon="mdi:key-variant" size={16} />
 					</Button>
-					<Button variant="ghost" size="icon">
-						<Icon icon="mingcute:delete-2-fill" size={18} className="text-error!" />
+					<Button
+						variant="ghost"
+						size="sm"
+						title={record.enabled ? "禁用用户" : "启用用户"}
+						onClick={() => handleToggleEnabled(record)}
+						className={record.enabled ? "text-orange-600" : "text-green-600"}
+					>
+						<Icon icon={record.enabled ? "mdi:account-off" : "mdi:account-check"} size={16} />
+					</Button>
+					<Button
+						variant="ghost"
+						size="sm"
+						title="删除用户"
+						onClick={() => handleDelete(record)}
+						className="text-red-600 hover:text-red-700"
+					>
+						<Icon icon="mingcute:delete-2-fill" size={16} />
 					</Button>
 				</div>
 			),
 		},
 	];
 
+	// 初始化加载
+	useEffect(() => {
+		loadUsers();
+	}, [loadUsers]);
+
 	return (
-		<Card>
-			<CardHeader>
-				<div className="flex items-center justify-between">
-					<div>User List</div>
-					<Button onClick={() => {}}>New</Button>
-				</div>
-			</CardHeader>
-			<CardContent>
-				<Table rowKey="id" size="small" scroll={{ x: "max-content" }} pagination={false} columns={columns} dataSource={USERS} />
-			</CardContent>
-		</Card>
+		<div className="space-y-4">
+			<Card>
+				<CardHeader>
+					<div className="flex items-center justify-between">
+						<div>
+							<h2 className="text-2xl font-bold">用户管理</h2>
+							<p className="text-muted-foreground">管理Keycloak用户账户</p>
+						</div>
+						<Button onClick={() => setUserModal({ open: true, mode: "create" })}>
+							<Icon icon="mdi:plus" size={16} className="mr-2" />
+							新建用户
+						</Button>
+					</div>
+				</CardHeader>
+				<CardContent>
+					{/* 搜索栏 */}
+					<div className="flex items-center gap-2 mb-4">
+						<Input
+							placeholder="搜索用户名..."
+							value={searchValue}
+							onChange={(e) => setSearchValue(e.target.value)}
+							onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+							className="max-w-sm"
+						/>
+						<Button onClick={handleSearch}>
+							<Icon icon="mdi:magnify" size={16} className="mr-2" />
+							搜索
+						</Button>
+						{searchValue && (
+							<Button
+								variant="outline"
+								onClick={() => {
+									setSearchValue("");
+									loadUsers({ current: 1, pageSize: pagination.pageSize });
+								}}
+							>
+								清除
+							</Button>
+						)}
+					</div>
+
+					{/* 用户表格 */}
+					<Table
+						rowKey="key"
+						columns={columns}
+						dataSource={users}
+						loading={loading}
+						scroll={{ x: 1200 }}
+						pagination={{
+							current: pagination.current,
+							pageSize: pagination.pageSize,
+							total: pagination.total,
+							showSizeChanger: true,
+							showQuickJumper: true,
+							showTotal: (total, range) => `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
+							onChange: (page, pageSize) => {
+								loadUsers({ current: page, pageSize });
+							},
+						}}
+					/>
+				</CardContent>
+			</Card>
+
+			{/* 用户创建/编辑Modal */}
+			<UserModal
+				open={userModal.open}
+				mode={userModal.mode}
+				user={userModal.user}
+				onCancel={() => setUserModal({ open: false, mode: "create" })}
+				onSuccess={() => {
+					setUserModal({ open: false, mode: "create" });
+					loadUsers({ current: pagination.current, pageSize: pagination.pageSize });
+				}}
+			/>
+
+			{/* 密码重置Modal */}
+			<ResetPasswordModal
+				open={resetPasswordModal.open}
+				userId={resetPasswordModal.userId}
+				username={resetPasswordModal.username}
+				onCancel={() => setResetPasswordModal({ open: false, userId: "", username: "" })}
+				onSuccess={() => {
+					setResetPasswordModal({ open: false, userId: "", username: "" });
+				}}
+			/>
+		</div>
 	);
 }
