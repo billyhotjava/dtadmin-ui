@@ -14,7 +14,11 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(
 	(config) => {
-		config.headers.Authorization = "Bearer Token";
+		// 从userStore获取访问令牌
+		const { userToken } = userStore.getState();
+		if (userToken.accessToken) {
+			config.headers.Authorization = `Bearer ${userToken.accessToken}`;
+		}
 		return config;
 	},
 	(error) => Promise.reject(error),

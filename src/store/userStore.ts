@@ -75,4 +75,26 @@ export const useSignIn = () => {
 	return signIn;
 };
 
+export const useSignOut = () => {
+	const { clearUserInfoAndToken } = useUserActions();
+	const { userToken } = useUserStore.getState();
+
+	const signOut = async () => {
+		try {
+			// 如果有refreshToken，调用后端登出接口
+			if (userToken.refreshToken) {
+				await userService.logout(userToken.refreshToken);
+			}
+		} catch (error) {
+			console.error("Logout error:", error);
+			// 即使登出接口失败，也要清理本地信息
+		} finally {
+			// 清理本地存储的用户信息和token
+			clearUserInfoAndToken();
+		}
+	};
+
+	return signOut;
+};
+
 export default useUserStore;

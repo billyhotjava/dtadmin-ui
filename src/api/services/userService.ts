@@ -12,16 +12,17 @@ export interface SignUpReq extends SignInReq {
 export type SignInRes = UserToken & { user: UserInfo };
 
 export enum UserApi {
-	SignIn = "/auth/signin",
+	SignIn = "/keycloak/auth/login",
 	SignUp = "/auth/signup",
-	Logout = "/auth/logout",
-	Refresh = "/auth/refresh",
+	Logout = "/keycloak/auth/logout",
+	Refresh = "/keycloak/auth/refresh",
 	User = "/user",
 }
 
 const signin = (data: SignInReq) => apiClient.post<SignInRes>({ url: UserApi.SignIn, data });
 const signup = (data: SignUpReq) => apiClient.post<SignInRes>({ url: UserApi.SignUp, data });
-const logout = () => apiClient.get({ url: UserApi.Logout });
+const logout = (refreshToken: string) => apiClient.post({ url: UserApi.Logout, data: { refreshToken } });
+const refresh = (refreshToken: string) => apiClient.post({ url: UserApi.Refresh, data: { refreshToken } });
 const findById = (id: string) => apiClient.get<UserInfo[]>({ url: `${UserApi.User}/${id}` });
 
 export default {
@@ -29,4 +30,5 @@ export default {
 	signup,
 	findById,
 	logout,
+	refresh,
 };

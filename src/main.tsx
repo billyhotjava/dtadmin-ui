@@ -13,10 +13,15 @@ import { routesSection } from "./routes/sections";
 import { urlJoin } from "./utils";
 
 await registerLocalIcons();
-await worker.start({
-	onUnhandledRequest: "bypass",
-	serviceWorker: { url: urlJoin(GLOBAL_CONFIG.publicPath, "mockServiceWorker.js") },
-});
+
+// 只在开发环境中启用mock服务
+if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_MOCK !== "false") {
+	await worker.start({
+		onUnhandledRequest: "bypass",
+		serviceWorker: { url: urlJoin(GLOBAL_CONFIG.publicPath, "mockServiceWorker.js") },
+	});
+}
+
 if (GLOBAL_CONFIG.routerMode === "backend") {
 	await menuService.getMenuList();
 }
