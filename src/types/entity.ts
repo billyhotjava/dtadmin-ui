@@ -12,9 +12,12 @@ export interface UserInfo {
 	username: string;
 	password?: string;
 	avatar?: string;
-	roles?: Role[];
+	firstName?: string;
+	lastName?: string;
+	enabled?: boolean;
+	roles?: Role[] | string[]; // 支持两种格式：对象数组或字符串数组
 	status?: BasicStatus;
-	permissions?: Permission[];
+	permissions?: Permission[] | string[]; // 支持两种格式：对象数组或字符串数组
 	menu?: MenuTree[];
 }
 

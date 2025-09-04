@@ -31,7 +31,13 @@ export const useAuthCheck = (baseOn: "role" | "permission" = "permission") => {
 		if (!accessToken) {
 			return false;
 		}
-		return resourcePool.some((p) => p.code === item);
+		return resourcePool.some((p) => {
+			// 处理字符串格式和对象格式
+			if (typeof p === "string") {
+				return p === item;
+			}
+			return p.code === item;
+		});
 	};
 
 	// check if any item exists

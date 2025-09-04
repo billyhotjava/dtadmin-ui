@@ -19,7 +19,7 @@ import apiClient from "../apiClient";
  * Keycloak用户管理API服务
  */
 export class KeycloakUserService {
-	private static readonly BASE_URL = "/api/keycloak/users";
+	private static readonly BASE_URL = "/keycloak/users";
 
 	/**
 	 * 获取所有用户
@@ -136,7 +136,7 @@ export class KeycloakUserService {
  * Keycloak角色管理API服务
  */
 export class KeycloakRoleService {
-	private static readonly BASE_URL = "/api/keycloak/roles";
+	private static readonly BASE_URL = "/keycloak/roles";
 
 	/**
 	 * 获取所有Realm角色
@@ -190,7 +190,7 @@ export class KeycloakRoleService {
  * Keycloak组管理API服务
  */
 export class KeycloakGroupService {
-	private static readonly BASE_URL = "/api/keycloak/groups";
+	private static readonly BASE_URL = "/keycloak/groups";
 
 	/**
 	 * 获取所有组

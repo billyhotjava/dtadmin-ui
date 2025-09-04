@@ -27,6 +27,13 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
 	(res: AxiosResponse<Result<any>>) => {
 		if (!res.data) throw new Error(t("sys.api.apiRequestFailed"));
+
+		// 特殊处理Keycloak API：直接返回原始响应数据
+		if (res.config.url?.includes("/keycloak/")) {
+			return res.data;
+		}
+
+		// 处理标准API响应格式
 		const { status, data, message } = res.data;
 		if (status === ResultStatus.SUCCESS) {
 			return data;

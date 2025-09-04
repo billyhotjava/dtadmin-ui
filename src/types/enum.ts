@@ -4,7 +4,7 @@ export enum BasicStatus {
 }
 
 export enum ResultStatus {
-	SUCCESS = 0,
+	SUCCESS = 200, // 适配后端HTTP状态码
 	ERROR = -1,
 	TIMEOUT = 401,
 }
