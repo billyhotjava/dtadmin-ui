@@ -19,18 +19,37 @@ axiosInstance.interceptors.request.use(
 		if (userToken.accessToken) {
 			config.headers.Authorization = `Bearer ${userToken.accessToken}`;
 		}
+
+		// 添加请求日志
+		console.log("API Request:", config.method?.toUpperCase(), config.baseURL, config.url, config);
 		return config;
 	},
-	(error) => Promise.reject(error),
+	(error) => {
+		console.error("API Request Error:", error);
+		return Promise.reject(error);
+	},
 );
 
 axiosInstance.interceptors.response.use(
 	(res: AxiosResponse<Result<any>>) => {
+		console.log("API Response:", res.status, res.config.url, res.data);
+
 		if (!res.data) throw new Error(t("sys.api.apiRequestFailed"));
 
-		// 特殊处理Keycloak API：直接返回原始响应数据
+		// 特殊处理Keycloak API
 		if (res.config.url?.includes("/keycloak/")) {
-			return res.data;
+			// 检查是否是标准响应格式（包含status字段）
+			if (res.data && typeof res.data === "object" && "status" in res.data) {
+				// 对于标准响应格式，返回data字段
+				const { status, data, message } = res.data;
+				if (status === ResultStatus.SUCCESS) {
+					return data;
+				}
+				throw new Error(message || t("sys.api.apiRequestFailed"));
+			} else {
+				// 对于直接返回数据的API（如用户列表），直接返回响应数据
+				return res.data;
+			}
 		}
 
 		// 处理标准API响应格式
@@ -41,6 +60,8 @@ axiosInstance.interceptors.response.use(
 		throw new Error(message || t("sys.api.apiRequestFailed"));
 	},
 	(error: AxiosError<Result>) => {
+		console.error("API Response Error:", error.response?.status, error.response?.data, error.message);
+
 		const { response, message } = error || {};
 		const errMsg = response?.data?.message || message || t("sys.api.errorMessage");
 		toast.error(errMsg, { position: "top-center" });
