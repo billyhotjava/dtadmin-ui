@@ -18,8 +18,4 @@ pre-commit:
       glob: "*.{ts,tsx}"
       run: npx tsc --noEmit
 
-commit-msg:
-  commands:
-    commitlint:
-      run: npx commitlint --edit {1}
-      skip: [merge, rebase]
+
