@@ -3,6 +3,7 @@ import type { UserProfileAttribute } from "#/keycloak";
 import { Icon } from "@/components/icon";
 import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
+import { Input } from "@/ui/input";
 import { Label } from "@/ui/label";
 
 interface UserProfileFieldProps {
@@ -99,6 +100,22 @@ export function UserProfileField({ attribute, value, onChange, disabled = false 
 		}
 	};
 
+	// 处理自由输入模式下的值变化
+	const handleFreeInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const newValue = e.target.value;
+		if (attribute.multivalued) {
+			// 对于多值属性，我们将其作为单个值处理，或者可以按逗号分割
+			const newValues = newValue
+				.split(",")
+				.map((v) => v.trim())
+				.filter((v) => v);
+			notifyChange(newValues);
+		} else {
+			// 单值属性
+			notifyChange([newValue]);
+		}
+	};
+
 	// 获取可用的选项（未被选择的选项）
 	const getAvailableOptions = useCallback((): string[] => {
 		const predefinedOptions = getPredefinedOptions();
@@ -112,6 +129,14 @@ export function UserProfileField({ attribute, value, onChange, disabled = false 
 
 	const predefinedOptions = getPredefinedOptions();
 	const availableOptions = getAvailableOptions();
+
+	// 获取当前显示的值（用于自由输入模式）
+	const getCurrentValue = (): string => {
+		if (attribute.multivalued) {
+			return values.join(", ");
+		}
+		return values.length > 0 ? values[0] : "";
+	};
 
 	return (
 		<div className="space-y-2">
@@ -154,9 +179,20 @@ export function UserProfileField({ attribute, value, onChange, disabled = false 
 				</div>
 			)}
 
-			{/* 如果没有预定义选项，显示提示信息 */}
+			{/* 如果没有预定义选项，显示输入框 */}
 			{!disabled && predefinedOptions.length === 0 && (
-				<p className="text-sm text-muted-foreground">该属性没有预定义选项，当前实现为自由输入模式</p>
+				<div className="mt-2">
+					<Input
+						type="text"
+						value={getCurrentValue()}
+						onChange={handleFreeInputChange}
+						placeholder={`请输入${attribute.displayName || attribute.name}的值`}
+						disabled={disabled}
+					/>
+					<p className="text-sm text-muted-foreground mt-1">
+						{attribute.multivalued ? "多个值请用逗号分隔" : "请输入值"}
+					</p>
+				</div>
 			)}
 
 			{attribute.multivalued && predefinedOptions.length > 0 && (
