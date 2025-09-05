@@ -182,3 +182,71 @@ export interface GroupTableRow extends KeycloakGroup {
 	key: string;
 	memberCount?: number;
 }
+
+/**
+ * UserProfile必需性配置
+ */
+export interface UserProfileRequired {
+	roles?: string[];
+	scopes?: string[];
+}
+
+/**
+ * UserProfile权限配置
+ */
+export interface UserProfilePermissions {
+	view?: string[];
+	edit?: string[];
+}
+
+/**
+ * UserProfile选择器配置
+ */
+export interface UserProfileSelector {
+	scopes?: string[];
+}
+
+/**
+ * UserProfile属性定义
+ */
+export interface UserProfileAttribute {
+	name: string;
+	displayName?: string;
+	validations?: Record<string, any>;
+	annotations?: Record<string, any>;
+	required?: UserProfileRequired;
+	permissions?: UserProfilePermissions;
+	multivalued?: boolean;
+	group?: string;
+	selector?: UserProfileSelector;
+}
+
+/**
+ * UserProfile组定义
+ */
+export interface UserProfileGroup {
+	name: string;
+	displayHeader?: string;
+	displayDescription?: string;
+	annotations?: Record<string, any>;
+}
+
+/**
+ * UserProfile配置
+ */
+export interface UserProfileConfig {
+	attributes?: UserProfileAttribute[];
+	groups?: UserProfileGroup[];
+	unmanagedAttributePolicy?: string;
+}
+
+/**
+ * UserProfile测试响应
+ */
+export interface UserProfileTestResponse {
+	configured: boolean;
+	message: string;
+	attributeCount?: number;
+	attributes?: string[];
+	error?: string;
+}

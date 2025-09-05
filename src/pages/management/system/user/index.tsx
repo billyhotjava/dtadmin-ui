@@ -2,8 +2,8 @@ import { Modal, Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import type { KeycloakUser, PaginationParams, UserTableRow } from "#/keycloak";
-import { KeycloakUserService } from "@/api/services/keycloakService";
+import type { KeycloakUser, PaginationParams, UserProfileConfig, UserTableRow } from "#/keycloak";
+import { KeycloakUserProfileService, KeycloakUserService } from "@/api/services/keycloakService";
 import { Icon } from "@/components/icon";
 import { usePathname, useRouter } from "@/routes/hooks";
 import { Badge } from "@/ui/badge";
@@ -25,6 +25,10 @@ export default function UserPage() {
 		pageSize: 10,
 		total: 0,
 	});
+
+	// UserProfile配置状态
+	const [userProfileConfig, setUserProfileConfig] = useState<UserProfileConfig | null>(null);
+	const [_profileLoading, setProfileLoading] = useState(false);
 
 	// Modal状态
 	const [userModal, setUserModal] = useState<{
@@ -72,6 +76,20 @@ export default function UserPage() {
 			toast.error(`加载用户列表失败: ${error.message || "未知错误"}`);
 		} finally {
 			setLoading(false);
+		}
+	}, []);
+
+	// 加载UserProfile配置
+	const loadUserProfileConfig = useCallback(async () => {
+		setProfileLoading(true);
+		try {
+			const config = await KeycloakUserProfileService.getUserProfileConfig();
+			setUserProfileConfig(config);
+		} catch (error: any) {
+			console.error("Error loading user profile config:", error);
+			// 不显示错误，因为可能没有配置UserProfile
+		} finally {
+			setProfileLoading(false);
 		}
 	}, []);
 
@@ -165,6 +183,19 @@ export default function UserPage() {
 				<Badge variant={verified ? "success" : "secondary"}>{verified ? "已验证" : "未验证"}</Badge>
 			),
 		},
+
+		// 动态添加UserProfile字段列
+		...(userProfileConfig?.attributes
+			?.filter((attr) => !["username", "email", "firstName", "lastName"].includes(attr.name))
+			.map((attr) => ({
+				title: attr.displayName || attr.name,
+				dataIndex: ["attributes", attr.name],
+				width: 150,
+				render: (value: string[] | undefined) => {
+					if (!value || value.length === 0) return "-";
+					return <span>{attr.multivalued ? value.join(", ") : value[0]}</span>;
+				},
+			})) || []),
 		{
 			title: "创建时间",
 			dataIndex: "createdTimestamp",
@@ -200,7 +231,7 @@ export default function UserPage() {
 						onClick={() =>
 							setResetPasswordModal({
 								open: true,
-								userId: record.id!,
+								userId: record.id || "",
 								username: record.username,
 							})
 						}
@@ -233,7 +264,8 @@ export default function UserPage() {
 	// 初始化加载
 	useEffect(() => {
 		loadUsers();
-	}, [loadUsers]);
+		loadUserProfileConfig();
+	}, [loadUsers, loadUserProfileConfig]);
 
 	return (
 		<div className="space-y-4">

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import type { CreateUserRequest, KeycloakRole, KeycloakUser, UpdateUserRequest } from "#/keycloak";
-import { KeycloakRoleService, KeycloakUserService } from "@/api/services/keycloakService";
+import type { CreateUserRequest, KeycloakRole, KeycloakUser, UpdateUserRequest, UserProfileConfig } from "#/keycloak";
+import { KeycloakRoleService, KeycloakUserProfileService, KeycloakUserService } from "@/api/services/keycloakService";
 import { Icon } from "@/components/icon";
 import { Alert, AlertDescription } from "@/ui/alert";
 import { Badge } from "@/ui/badge";
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/ui/input";
 import { Label } from "@/ui/label";
 import { Switch } from "@/ui/switch";
+import { UserProfileField } from "./user-profile-field";
 
 interface UserModalProps {
 	open: boolean;
@@ -27,6 +28,7 @@ interface FormData {
 	lastName: string;
 	enabled: boolean;
 	emailVerified: boolean;
+	attributes: Record<string, string[]>;
 }
 
 export default function UserModal({ open, mode, user, onCancel, onSuccess }: UserModalProps) {
@@ -37,6 +39,7 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 		lastName: "",
 		enabled: true,
 		emailVerified: false,
+		attributes: {},
 	});
 
 	const [loading, setLoading] = useState(false);
@@ -44,6 +47,26 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 	const [roles, setRoles] = useState<KeycloakRole[]>([]);
 	const [userRoles, setUserRoles] = useState<KeycloakRole[]>([]);
 	const [roleError, setRoleError] = useState<string>("");
+
+	// UserProfile相关状态
+	const [userProfileConfig, setUserProfileConfig] = useState<UserProfileConfig | null>(null);
+	const [profileLoading, setProfileLoading] = useState(false);
+	const [profileError, setProfileError] = useState<string>("");
+
+	// 加载UserProfile配置
+	const loadUserProfileConfig = useCallback(async () => {
+		setProfileLoading(true);
+		setProfileError("");
+		try {
+			const config = await KeycloakUserProfileService.getUserProfileConfig();
+			setUserProfileConfig(config);
+		} catch (err) {
+			console.error("Error loading user profile config:", err);
+			setProfileError("加载用户配置文件失败");
+		} finally {
+			setProfileLoading(false);
+		}
+	}, []);
 
 	// 加载所有角色
 	const loadRoles = useCallback(async () => {
@@ -76,6 +99,7 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 				lastName: user.lastName || "",
 				enabled: user.enabled ?? true,
 				emailVerified: user.emailVerified ?? false,
+				attributes: user.attributes || {},
 			});
 
 			// 加载用户角色
@@ -90,6 +114,7 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 				lastName: "",
 				enabled: true,
 				emailVerified: false,
+				attributes: {},
 			});
 			setUserRoles([]);
 		}
@@ -101,8 +126,9 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 	useEffect(() => {
 		if (open) {
 			loadRoles();
+			loadUserProfileConfig(); // 加载UserProfile配置
 		}
-	}, [open, loadRoles]);
+	}, [open, loadRoles, loadUserProfileConfig]);
 
 	const handleSubmit = async () => {
 		if (!formData.username.trim()) {
@@ -127,6 +153,7 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 					lastName: formData.lastName,
 					enabled: formData.enabled,
 					emailVerified: formData.emailVerified,
+					attributes: formData.attributes,
 				};
 
 				await KeycloakUserService.createUser(createData);
@@ -139,6 +166,7 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 					lastName: formData.lastName,
 					enabled: formData.enabled,
 					emailVerified: formData.emailVerified,
+					attributes: formData.attributes,
 				};
 
 				await KeycloakUserService.updateUser(user.id, updateData);
@@ -261,6 +289,45 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 							</div>
 						</CardContent>
 					</Card>
+
+					{/* UserProfile字段 (基于realm配置) */}
+					{userProfileConfig?.attributes && userProfileConfig.attributes.length > 0 && (
+						<Card>
+							<CardHeader>
+								<CardTitle className="text-lg">附加属性</CardTitle>
+								{profileError && <p className="text-sm text-destructive">{profileError}</p>}
+							</CardHeader>
+							<CardContent className="space-y-4">
+								{profileLoading ? (
+									<div className="flex items-center justify-center py-4">
+										<Icon icon="mdi:loading" className="animate-spin mr-2" />
+										<span>加载配置中...</span>
+									</div>
+								) : (
+									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+										{userProfileConfig.attributes
+											.filter((attr) => !["username", "email", "firstName", "lastName"].includes(attr.name))
+											.map((attribute) => (
+												<UserProfileField
+													key={attribute.name}
+													attribute={attribute}
+													value={formData.attributes[attribute.name]}
+													onChange={(value) => {
+														setFormData((prev) => ({
+															...prev,
+															attributes: {
+																...prev.attributes,
+																[attribute.name]: Array.isArray(value) ? value : [value],
+															},
+														}));
+													}}
+												/>
+											))}
+									</div>
+								)}
+							</CardContent>
+						</Card>
+					)}
 
 					{/* 角色分配 (仅编辑模式) */}
 					{mode === "edit" && user?.id && (

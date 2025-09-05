@@ -2,14 +2,15 @@ import { Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import type { KeycloakGroup, KeycloakRole, KeycloakUser } from "#/keycloak";
-import { KeycloakGroupService, KeycloakUserService } from "@/api/services/keycloakService";
+import type { KeycloakGroup, KeycloakRole, KeycloakUser, UserProfileConfig } from "#/keycloak";
+import { KeycloakGroupService, KeycloakUserProfileService, KeycloakUserService } from "@/api/services/keycloakService";
 import { Icon } from "@/components/icon";
 import { useParams, useRouter } from "@/routes/hooks";
 import { Alert, AlertDescription } from "@/ui/alert";
 import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui/card";
+import { Label } from "@/ui/label";
 import ResetPasswordModal from "./reset-password-modal";
 import UserModal from "./user-modal";
 
@@ -23,9 +24,29 @@ export default function UserDetail() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string>("");
 
+	// UserProfile相关状态
+	const [userProfileConfig, setUserProfileConfig] = useState<UserProfileConfig | null>(null);
+	const [_profileLoading, setProfileLoading] = useState(false);
+	const [_profileError, setProfileError] = useState<string>("");
+
 	// Modal状态
 	const [editModal, setEditModal] = useState(false);
 	const [resetPasswordModal, setResetPasswordModal] = useState(false);
+
+	// 加载UserProfile配置
+	const loadUserProfileConfig = useCallback(async () => {
+		setProfileLoading(true);
+		setProfileError("");
+		try {
+			const config = await KeycloakUserProfileService.getUserProfileConfig();
+			setUserProfileConfig(config);
+		} catch (err) {
+			console.error("Error loading user profile config:", err);
+			setProfileError("加载用户配置文件失败");
+		} finally {
+			setProfileLoading(false);
+		}
+	}, []);
 
 	// 加载用户详情
 	const loadUserDetail = useCallback(async () => {
@@ -108,7 +129,8 @@ export default function UserDetail() {
 
 	useEffect(() => {
 		loadUserDetail();
-	}, [loadUserDetail]);
+		loadUserProfileConfig();
+	}, [loadUserDetail, loadUserProfileConfig]);
 
 	if (loading) {
 		return (
@@ -136,6 +158,45 @@ export default function UserDetail() {
 			</div>
 		);
 	}
+
+	// 获取UserProfile中定义的属性名称
+	const getUserProfileAttributeNames = () => {
+		if (!userProfileConfig?.attributes) return [];
+		return userProfileConfig.attributes
+			.filter((attr) => !["username", "email", "firstName", "lastName"].includes(attr.name))
+			.map((attr) => attr.name);
+	};
+
+	// 过滤用户属性，只显示UserProfile中定义的属性
+	const getFilteredUserAttributes = () => {
+		if (!userProfileConfig?.attributes) return {};
+
+		// 获取UserProfile中定义的所有属性名称
+		const profileAttributeNames = getUserProfileAttributeNames();
+		if (profileAttributeNames.length === 0) return {};
+
+		const filtered: Record<string, string[]> = {};
+
+		// 为每个UserProfile定义的属性创建条目，即使值为空
+		profileAttributeNames.forEach((name) => {
+			if (user?.attributes?.[name]) {
+				// 如果用户有该属性值，则使用实际值
+				filtered[name] = user.attributes[name];
+			} else {
+				// 如果用户没有该属性值，则创建空数组
+				filtered[name] = [];
+			}
+		});
+
+		return filtered;
+	};
+
+	// 获取属性的显示名称
+	const getAttributeDisplayName = (name: string) => {
+		if (!userProfileConfig?.attributes) return name;
+		const attribute = userProfileConfig.attributes.find((attr) => attr.name === name);
+		return attribute?.displayName || name;
+	};
 
 	return (
 		<div className="space-y-6">
@@ -214,6 +275,35 @@ export default function UserDetail() {
 				</CardContent>
 			</Card>
 
+			{/* 用户附加属性 */}
+			{userProfileConfig?.attributes && userProfileConfig.attributes.length > 0 && (
+				<Card>
+					<CardHeader>
+						<CardTitle className="text-lg">附加属性</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+							{Object.entries(getFilteredUserAttributes()).map(([name, values]) => (
+								<div key={name} className="space-y-1">
+									<Label className="text-sm font-medium">{getAttributeDisplayName(name)}</Label>
+									<div className="mt-1 space-y-1">
+										{values.length > 0 ? (
+											values.map((value) => (
+												<Badge key={value} variant="outline" className="mr-1 mb-1">
+													{value}
+												</Badge>
+											))
+										) : (
+											<span className="text-muted-foreground text-sm">-</span>
+										)}
+									</div>
+								</div>
+							))}
+						</div>
+					</CardContent>
+				</Card>
+			)}
+
 			{/* 用户角色 */}
 			<Card>
 				<CardHeader>
@@ -269,12 +359,10 @@ export default function UserDetail() {
 			{/* 重置密码Modal */}
 			<ResetPasswordModal
 				open={resetPasswordModal}
-				userId={user.id!}
-				username={user.username}
+				userId={user?.id || ""}
+				username={user?.username || ""}
 				onCancel={() => setResetPasswordModal(false)}
-				onSuccess={() => {
-					setResetPasswordModal(false);
-				}}
+				onSuccess={() => {}}
 			/>
 		</div>
 	);

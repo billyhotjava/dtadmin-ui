@@ -11,6 +11,8 @@ import type {
 	UpdateGroupRequest,
 	UpdateRoleRequest,
 	UpdateUserRequest,
+	UserProfileConfig,
+	UserProfileTestResponse,
 	UserQueryParams,
 } from "#/keycloak";
 import apiClient from "../apiClient";
@@ -277,10 +279,64 @@ export class KeycloakGroupService {
 }
 
 /**
+ * Keycloak UserProfile管理API服务
+ */
+export class KeycloakUserProfileService {
+	private static readonly BASE_URL = "/keycloak/userprofile";
+
+	/**
+	 * 获取UserProfile配置
+	 */
+	static getUserProfileConfig(): Promise<UserProfileConfig> {
+		return apiClient.get<UserProfileConfig>({
+			url: `${KeycloakUserProfileService.BASE_URL}/config`,
+		});
+	}
+
+	/**
+	 * 更新UserProfile配置
+	 */
+	static updateUserProfileConfig(config: UserProfileConfig): Promise<KeycloakApiResponse> {
+		return apiClient.put<KeycloakApiResponse>({
+			url: `${KeycloakUserProfileService.BASE_URL}/config`,
+			data: config,
+		});
+	}
+
+	/**
+	 * 检查UserProfile是否已配置
+	 */
+	static isUserProfileConfigured(): Promise<{ configured: boolean }> {
+		return apiClient.get<{ configured: boolean }>({
+			url: `${KeycloakUserProfileService.BASE_URL}/configured`,
+		});
+	}
+
+	/**
+	 * 获取UserProfile中定义的所有属性名称
+	 */
+	static getUserProfileAttributeNames(): Promise<string[]> {
+		return apiClient.get<string[]>({
+			url: `${KeycloakUserProfileService.BASE_URL}/attributes`,
+		});
+	}
+
+	/**
+	 * 测试UserProfile服务连接
+	 */
+	static testUserProfileService(): Promise<UserProfileTestResponse> {
+		return apiClient.get<UserProfileTestResponse>({
+			url: `${KeycloakUserProfileService.BASE_URL}/test`,
+		});
+	}
+}
+
+/**
  * 导出所有Keycloak服务
  */
 export default {
 	user: KeycloakUserService,
 	role: KeycloakRoleService,
 	group: KeycloakGroupService,
+	userProfile: KeycloakUserProfileService,
 };
