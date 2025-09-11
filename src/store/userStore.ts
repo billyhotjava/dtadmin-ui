@@ -63,29 +63,20 @@ export const useSignIn = () => {
 			const res = await signInMutation.mutateAsync(data);
 			const { user, accessToken, refreshToken } = res;
 
-			// 适配后端数据格式：将字符串数组转换为对象数组
+			// 适配后端数据格式：处理角色和权限信息
 			const adaptedUser = {
 				...user,
-				// 如果roles是字符串数组，转换为对象数组
-				roles:
-					Array.isArray(user.roles) && user.roles.length > 0 && typeof user.roles[0] === "string"
-						? (user.roles as string[]).map((role, index) => ({
-								id: `role-${index}`,
-								name: role,
-								code: role,
-							}))
-						: user.roles,
-				// 如果permissions是字符串数组，转换为对象数组
-				permissions:
-					Array.isArray(user.permissions) && user.permissions.length > 0 && typeof user.permissions[0] === "string"
-						? (user.permissions as string[]).map((permission, index) => ({
-								id: `permission-${index}`,
-								name: permission,
-								code: permission,
-							}))
-						: user.permissions,
+				// 处理角色信息 - 保持字符串数组格式
+				roles: Array.isArray(user.roles) ? user.roles : [],
+				// 处理权限信息 - 保持字符串数组格式
+				permissions: Array.isArray(user.permissions) ? user.permissions : [],
 				// 为用户设置默认头像
 				avatar: user.avatar || "/logo.svg",
+				// 确保必要的字段存在
+				firstName: user.firstName || "",
+				lastName: user.lastName || "",
+				email: user.email || "",
+				enabled: user.enabled !== undefined ? user.enabled : true,
 			};
 
 			setUserToken({ accessToken, refreshToken });
