@@ -155,8 +155,8 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 					// 检查值是否为空
 					if (
 						!value ||
-						(Array.isArray(value) && value.length === 0) ||
-						(typeof value === "string" && !(value as string).trim())
+						(Array.isArray(value) && (value.length === 0 || value.every((v) => v === ""))) ||
+						(typeof value === "string" && (!(value as string).trim() || (value as string) === ""))
 					) {
 						setError(`"${attribute.displayName || attribute.name}" 是必填字段`);
 						return;
