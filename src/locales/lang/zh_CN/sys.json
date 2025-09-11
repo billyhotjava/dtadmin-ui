@@ -96,7 +96,8 @@
 					"user": "用户管理",
 					"role": "角色管理",
 					"permission": "权限管理",
-					"approval": "审批管理"
+					"approval": "审批管理",
+					"audit_log": "日志审计"
 				}
 			},
 			"blog": "博客",

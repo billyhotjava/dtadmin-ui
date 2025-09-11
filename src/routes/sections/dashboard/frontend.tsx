@@ -26,6 +26,7 @@ export function getFrontendDashboardRoutes(): RouteObject[] {
 						{ path: "user", element: Component("/pages/management/system/user") },
 						{ path: "user/:id", element: Component("/pages/management/system/user/detail") },
 						{ path: "approval", element: Component("/pages/management/system/approval") },
+						{ path: "auditlog", element: Component("/pages/management/system/auditlog") },
 					],
 				},
 			],

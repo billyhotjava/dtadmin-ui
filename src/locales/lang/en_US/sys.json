@@ -128,7 +128,8 @@
 					"user": "User Management",
 					"role": "Role Management",
 					"permission": "Permission Management",
-					"approval": "Approval Management"
+					"approval": "Approval Management",
+					"audit_log": "Audit Log"
 				}
 			},
 			"toast": "Toast",

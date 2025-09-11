@@ -101,6 +101,16 @@ export const DB_MENU: Menu[] = [
 		path: "/management/system/approval",
 		component: "/pages/management/system/approval",
 	},
+	// 添加审计日志菜单项
+	{
+		id: "management_system_audit_log",
+		parentId: "management_system",
+		name: "sys.nav.system.audit_log",
+		code: "management:system:audit_log",
+		type: MENU,
+		path: "/management/system/audit-log",
+		component: "/pages/management/system/audit-log/index",
+	},
 ];
 
 export const DB_USER: User[] = [
