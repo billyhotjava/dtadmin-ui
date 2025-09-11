@@ -64,6 +64,7 @@ export interface CreateUserRequest {
  * 更新用户请求
  */
 export interface UpdateUserRequest {
+	id?: string;
 	username?: string;
 	email?: string;
 	firstName?: string;
@@ -141,6 +142,7 @@ export interface KeycloakApiResponse<T = any> {
 	userId?: string;
 	groupId?: string;
 	data?: T;
+	requestId?: number;
 }
 
 /**
@@ -249,4 +251,47 @@ export interface UserProfileTestResponse {
 	attributeCount?: number;
 	attributes?: string[];
 	error?: string;
+}
+
+/**
+ * 审批请求信息（列表用，不包含items字段）
+ */
+export interface ApprovalRequest {
+	id: number;
+	requester: string;
+	type: string;
+	reason: string;
+	createdAt: string;
+	decidedAt?: string;
+	status: string;
+	approver?: string;
+	decisionNote?: string;
+	errorMessage?: string;
+	// 注意：列表接口不返回items字段
+}
+
+/**
+ * 审批项信息
+ */
+export interface ApprovalItem {
+	id: number;
+	targetKind: string;
+	targetId: string;
+	seqNumber: number;
+	payload: string;
+}
+
+/**
+ * 审批请求详情（包含items字段）
+ */
+export interface ApprovalRequestDetail extends ApprovalRequest {
+	items: ApprovalItem[];
+}
+
+/**
+ * 审批操作请求
+ */
+export interface ApprovalActionRequest {
+	approver: string;
+	note: string;
 }

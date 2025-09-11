@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/ui/card";
 import { Label } from "@/ui/label";
 import ResetPasswordModal from "./reset-password-modal";
 import UserModal from "./user-modal";
+import { ApprovalStatus } from "./approval-status";
 
 export default function UserDetail() {
 	const { id } = useParams();
@@ -263,6 +264,12 @@ export default function UserDetail() {
 								<Badge variant={user.emailVerified ? "success" : "secondary"}>
 									{user.emailVerified ? "已验证" : "未验证"}
 								</Badge>
+							</div>
+						</div>
+						<div>
+							<span className="text-sm font-medium text-muted-foreground">审批状态</span>
+							<div className="mt-1">
+								<ApprovalStatus userId={user.id || ""} />
 							</div>
 						</div>
 						{user.createdTimestamp && (

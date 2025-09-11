@@ -106,19 +106,23 @@ export default function UserPage() {
 	const handleDelete = (user: KeycloakUser) => {
 		Modal.confirm({
 			title: "确认删除",
-			content: `确定要删除用户 "${user.username}" 吗？此操作无法撤销。`,
-			okText: "删除",
+			content: `确定要删除用户 "${user.username}" 吗？此操作需要审批。`,
+			okText: "提交删除请求",
 			cancelText: "取消",
 			okButtonProps: { danger: true },
 			onOk: async () => {
 				try {
 					if (!user.id) throw new Error("用户ID不存在");
-					await KeycloakUserService.deleteUser(user.id);
-					toast.success("用户删除成功");
+					const response = await KeycloakUserService.deleteUser(user.id);
+					if (response.message) {
+						toast.success(`用户删除请求提交成功: ${response.message}`);
+					} else {
+						toast.success("用户删除请求提交成功");
+					}
 					loadUsers({ current: pagination.current, pageSize: pagination.pageSize });
 				} catch (error: any) {
 					console.error("Error deleting user:", error);
-					toast.error(`删除用户失败: ${error.message || "未知错误"}`);
+					toast.error(`提交删除请求失败: ${error.message || "未知错误"}`);
 				}
 			},
 		});

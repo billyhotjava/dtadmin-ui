@@ -25,16 +25,20 @@ export const frontendNavData: NavProps["data"] = [
 						path: "/management/system",
 						children: [
 							{
-								title: "sys.nav.usermgmt.permission",
+								title: "sys.nav.usermgmt.system.permission",
 								path: "/management/system/permission",
 							},
 							{
-								title: "sys.nav.usermgmt.role",
+								title: "sys.nav.usermgmt.system.role",
 								path: "/management/system/role",
 							},
 							{
-								title: "sys.nav.usermgmt.user",
+								title: "sys.nav.usermgmt.system.user",
 								path: "/management/system/user",
+							},
+							{
+								title: "sys.nav.usermgmt.system.approval",
+								path: "/management/system/approval",
 							},
 						],
 					},

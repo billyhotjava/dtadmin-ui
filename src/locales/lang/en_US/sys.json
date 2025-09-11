@@ -122,7 +122,14 @@
 				"permission": "Permission",
 				"role": "Role",
 				"user": "User",
-				"user_detail": "User Detail"
+				"user_detail": "User Detail",
+				"system": {
+					"index": "System Management",
+					"user": "User Management",
+					"role": "Role Management",
+					"permission": "Permission Management",
+					"approval": "Approval Management"
+				}
 			},
 			"toast": "Toast",
 			"token_expired": "Token Expired",

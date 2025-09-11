@@ -92,6 +92,15 @@ export const DB_MENU: Menu[] = [
 		path: "/management/system/permission",
 		component: "/pages/management/system/permission",
 	},
+	{
+		id: "management_system_approval",
+		parentId: "management_system",
+		name: "sys.nav.system.approval",
+		code: "management:system:approval",
+		type: MENU,
+		path: "/management/system/approval",
+		component: "/pages/management/system/approval",
+	},
 ];
 
 export const DB_USER: User[] = [

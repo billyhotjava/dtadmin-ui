@@ -20,11 +20,12 @@ export function getFrontendDashboardRoutes(): RouteObject[] {
 				{
 					path: "system",
 					children: [
-						{ index: true, element: <Navigate to="permission" replace /> },
+						{ index: true, element: <Navigate to="user" replace /> },
 						{ path: "permission", element: Component("/pages/management/system/permission") },
 						{ path: "role", element: Component("/pages/management/system/role") },
 						{ path: "user", element: Component("/pages/management/system/user") },
 						{ path: "user/:id", element: Component("/pages/management/system/user/detail") },
+						{ path: "approval", element: Component("/pages/management/system/approval") },
 					],
 				},
 			],

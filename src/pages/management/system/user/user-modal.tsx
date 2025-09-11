@@ -141,6 +141,30 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 			return;
 		}
 
+		// 检查UserProfile中的必填字段
+		if (userProfileConfig?.attributes) {
+			for (const attribute of userProfileConfig.attributes) {
+				// 跳过基础字段，因为它们已经在上面检查过了
+				if (["username", "email", "firstName", "lastName"].includes(attribute.name)) {
+					continue;
+				}
+
+				// 检查是否为必填字段
+				if (attribute.required?.roles && attribute.required.roles.length > 0) {
+					const value = formData.attributes[attribute.name];
+					// 检查值是否为空
+					if (
+						!value ||
+						(Array.isArray(value) && value.length === 0) ||
+						(typeof value === "string" && !(value as string).trim())
+					) {
+						setError(`"${attribute.displayName || attribute.name}" 是必填字段`);
+						return;
+					}
+				}
+			}
+		}
+
 		setLoading(true);
 		setError("");
 
@@ -156,10 +180,15 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 					attributes: formData.attributes,
 				};
 
-				await KeycloakUserService.createUser(createData);
-				toast.success("用户创建成功");
+				const response = await KeycloakUserService.createUser(createData);
+				if (response.userId) {
+					toast.success("用户创建请求已提交，等待审批");
+				} else {
+					toast.success("用户创建请求提交成功");
+				}
 			} else if (mode === "edit" && user?.id) {
 				const updateData: UpdateUserRequest = {
+					id: user.id,
 					username: formData.username,
 					email: formData.email,
 					firstName: formData.firstName,
@@ -169,8 +198,12 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 					attributes: formData.attributes,
 				};
 
-				await KeycloakUserService.updateUser(user.id, updateData);
-				toast.success("用户更新成功");
+				const response = await KeycloakUserService.updateUser(user.id, updateData);
+				if (response.message) {
+					toast.success(`用户更新请求提交成功: ${response.message}`);
+				} else {
+					toast.success("用户更新请求提交成功");
+				}
 			}
 
 			onSuccess();
@@ -190,13 +223,19 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 			const hasRole = userRoles.some((r) => r.id === role.id);
 
 			if (hasRole) {
-				await KeycloakUserService.removeRolesFromUser(user.id, [role]);
-				setUserRoles((prev) => prev.filter((r) => r.id !== role.id));
-				toast.success(`已移除角色: ${role.name}`);
+				const response = await KeycloakUserService.removeRolesFromUser(user.id, [role]);
+				if (response.message) {
+					toast.success(`角色移除请求提交成功: ${response.message}`);
+				} else {
+					toast.success("角色移除请求提交成功");
+				}
 			} else {
-				await KeycloakUserService.assignRolesToUser(user.id, [role]);
-				setUserRoles((prev) => [...prev, role]);
-				toast.success(`已分配角色: ${role.name}`);
+				const response = await KeycloakUserService.assignRolesToUser(user.id, [role]);
+				if (response.message) {
+					toast.success(`角色分配请求提交成功: ${response.message}`);
+				} else {
+					toast.success("角色分配请求提交成功");
+				}
 			}
 		} catch (err: any) {
 			setRoleError(err.message || "角色操作失败");
