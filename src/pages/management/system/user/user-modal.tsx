@@ -31,6 +31,17 @@ interface FormData {
 	attributes: Record<string, string[]>;
 }
 
+interface RoleChange {
+	role: KeycloakRole;
+	action: "add" | "remove";
+}
+
+interface FormState {
+	originalData: FormData;
+	originalRoles: KeycloakRole[];
+	roleChanges: RoleChange[];
+}
+
 export default function UserModal({ open, mode, user, onCancel, onSuccess }: UserModalProps) {
 	const [formData, setFormData] = useState<FormData>({
 		username: "",
@@ -40,6 +51,20 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 		enabled: true,
 		emailVerified: false,
 		attributes: {},
+	});
+
+	const [formState, setFormState] = useState<FormState>({
+		originalData: {
+			username: "",
+			email: "",
+			firstName: "",
+			lastName: "",
+			enabled: true,
+			emailVerified: false,
+			attributes: {},
+		},
+		originalRoles: [],
+		roleChanges: [],
 	});
 
 	const [loading, setLoading] = useState(false);
@@ -83,16 +108,18 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 		try {
 			const userRolesData = await KeycloakUserService.getUserRoles(userId);
 			setUserRoles(userRolesData);
+			return userRolesData;
 		} catch (err) {
 			setRoleError("加载用户角色失败");
 			console.error("Error loading user roles:", err);
+			return [];
 		}
 	}, []);
 
 	// 初始化表单数据
 	useEffect(() => {
 		if (mode === "edit" && user) {
-			setFormData({
+			const initialFormData = {
 				username: user.username || "",
 				email: user.email || "",
 				firstName: user.firstName || "",
@@ -100,11 +127,23 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 				enabled: user.enabled ?? true,
 				emailVerified: user.emailVerified ?? false,
 				attributes: user.attributes || {},
+			};
+
+			setFormData(initialFormData);
+			setFormState({
+				originalData: initialFormData,
+				originalRoles: [],
+				roleChanges: [],
 			});
 
 			// 加载用户角色
 			if (user.id) {
-				loadUserRoles(user.id);
+				loadUserRoles(user.id).then((roles) => {
+					setFormState((prev) => ({
+						...prev,
+						originalRoles: roles,
+					}));
+				});
 			}
 		} else {
 			setFormData({
@@ -115,6 +154,19 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 				enabled: true,
 				emailVerified: false,
 				attributes: {},
+			});
+			setFormState({
+				originalData: {
+					username: "",
+					email: "",
+					firstName: "",
+					lastName: "",
+					enabled: true,
+					emailVerified: false,
+					attributes: {},
+				},
+				originalRoles: [],
+				roleChanges: [],
 			});
 			setUserRoles([]);
 		}
@@ -165,6 +217,16 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 			}
 		}
 
+		// 检查是否有任何变更
+		const hasUserInfoChanges = hasUserInfoChanged();
+		const hasRoleChanges = formState.roleChanges.length > 0;
+
+		// 如果没有任何变更，显示提示信息
+		if (!hasUserInfoChanges && !hasRoleChanges) {
+			toast.info("没有检测到任何变更");
+			return;
+		}
+
 		setLoading(true);
 		setError("");
 
@@ -187,22 +249,56 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 					toast.success("用户创建请求提交成功");
 				}
 			} else if (mode === "edit" && user?.id) {
-				const updateData: UpdateUserRequest = {
-					id: user.id,
-					username: formData.username,
-					email: formData.email,
-					firstName: formData.firstName,
-					lastName: formData.lastName,
-					enabled: formData.enabled,
-					emailVerified: formData.emailVerified,
-					attributes: formData.attributes,
-				};
+				// 分别处理用户信息变更和角色变更
+				const hasUserInfoChanges = hasUserInfoChanged();
+				const hasRoleChanges = formState.roleChanges.length > 0;
 
-				const response = await KeycloakUserService.updateUser(user.id, updateData);
-				if (response.message) {
-					toast.success(`用户更新请求提交成功: ${response.message}`);
-				} else {
-					toast.success("用户更新请求提交成功");
+				// 如果有用户信息变更，提交用户信息更新请求
+				if (hasUserInfoChanges) {
+					const updateData: UpdateUserRequest = {
+						id: user.id,
+						username: formData.username,
+						email: formData.email,
+						firstName: formData.firstName,
+						lastName: formData.lastName,
+						enabled: formData.enabled,
+						emailVerified: formData.emailVerified,
+						attributes: formData.attributes,
+					};
+
+					const response = await KeycloakUserService.updateUser(user.id, updateData);
+					if (response.message) {
+						toast.success(`用户信息更新请求提交成功: ${response.message}`);
+					} else {
+						toast.success("用户信息更新请求提交成功");
+					}
+				}
+
+				// 如果有角色变更，提交角色变更请求
+				if (hasRoleChanges) {
+					// 处理添加的角色
+					const rolesToAdd = formState.roleChanges.filter((rc) => rc.action === "add").map((rc) => rc.role);
+
+					if (rolesToAdd.length > 0) {
+						const response = await KeycloakUserService.assignRolesToUser(user.id, rolesToAdd);
+						if (response.message) {
+							toast.success(`角色分配请求提交成功: ${response.message}`);
+						} else {
+							toast.success("角色分配请求提交成功");
+						}
+					}
+
+					// 处理移除的角色
+					const rolesToRemove = formState.roleChanges.filter((rc) => rc.action === "remove").map((rc) => rc.role);
+
+					if (rolesToRemove.length > 0) {
+						const response = await KeycloakUserService.removeRolesFromUser(user.id, rolesToRemove);
+						if (response.message) {
+							toast.success(`角色移除请求提交成功: ${response.message}`);
+						} else {
+							toast.success("角色移除请求提交成功");
+						}
+					}
 				}
 			}
 
@@ -215,31 +311,43 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 		}
 	};
 
-	const handleRoleToggle = async (role: KeycloakRole) => {
-		if (!user?.id) return;
+	// 检查用户信息是否有变更
+	const hasUserInfoChanged = (): boolean => {
+		const { originalData } = formState;
+		return (
+			formData.username !== originalData.username ||
+			formData.email !== originalData.email ||
+			formData.firstName !== originalData.firstName ||
+			formData.lastName !== originalData.lastName ||
+			formData.enabled !== originalData.enabled ||
+			formData.emailVerified !== originalData.emailVerified ||
+			JSON.stringify(formData.attributes) !== JSON.stringify(originalData.attributes)
+		);
+	};
 
-		try {
-			setRoleError("");
-			const hasRole = userRoles.some((r) => r.id === role.id);
+	const handleRoleToggle = (role: KeycloakRole) => {
+		const hasRole = userRoles.some((r) => r.id === role.id);
 
-			if (hasRole) {
-				const response = await KeycloakUserService.removeRolesFromUser(user.id, [role]);
-				if (response.message) {
-					toast.success(`角色移除请求提交成功: ${response.message}`);
-				} else {
-					toast.success("角色移除请求提交成功");
-				}
-			} else {
-				const response = await KeycloakUserService.assignRolesToUser(user.id, [role]);
-				if (response.message) {
-					toast.success(`角色分配请求提交成功: ${response.message}`);
-				} else {
-					toast.success("角色分配请求提交成功");
-				}
-			}
-		} catch (err: any) {
-			setRoleError(err.message || "角色操作失败");
-			console.error("Error toggling role:", err);
+		if (hasRole) {
+			// 移除角色
+			setUserRoles((prev) => prev.filter((r) => r.id !== role.id));
+			setFormState((prev) => ({
+				...prev,
+				roleChanges: [
+					...prev.roleChanges.filter((rc) => rc.role.id !== role.id || rc.action !== "add"),
+					{ role, action: "remove" },
+				],
+			}));
+		} else {
+			// 添加角色
+			setUserRoles((prev) => [...prev, role]);
+			setFormState((prev) => ({
+				...prev,
+				roleChanges: [
+					...prev.roleChanges.filter((rc) => rc.role.id !== role.id || rc.action !== "remove"),
+					{ role, action: "add" },
+				],
+			}));
 		}
 	};
 
