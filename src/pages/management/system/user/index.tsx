@@ -1,4 +1,4 @@
-import { Modal, Table } from "antd";
+import { Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -102,46 +102,6 @@ export default function UserPage() {
 		}
 	};
 
-	// 删除用户
-	const handleDelete = (user: KeycloakUser) => {
-		Modal.confirm({
-			title: "确认删除",
-			content: `确定要删除用户 "${user.username}" 吗？此操作需要审批。`,
-			okText: "提交删除请求",
-			cancelText: "取消",
-			okButtonProps: { danger: true },
-			onOk: async () => {
-				try {
-					if (!user.id) throw new Error("用户ID不存在");
-					const response = await KeycloakUserService.deleteUser(user.id);
-					if (response.message) {
-						toast.success(`用户删除请求提交成功: ${response.message}`);
-					} else {
-						toast.success("用户删除请求提交成功");
-					}
-					loadUsers({ current: pagination.current, pageSize: pagination.pageSize });
-				} catch (error: any) {
-					console.error("Error deleting user:", error);
-					toast.error(`提交删除请求失败: ${error.message || "未知错误"}`);
-				}
-			},
-		});
-	};
-
-	// 切换用户启用状态
-	const handleToggleEnabled = async (user: KeycloakUser) => {
-		try {
-			if (!user.id) throw new Error("用户ID不存在");
-
-			await KeycloakUserService.setUserEnabled(user.id, { enabled: !user.enabled });
-			toast.success(`用户已${user.enabled ? "禁用" : "启用"}`);
-			loadUsers({ current: pagination.current, pageSize: pagination.pageSize });
-		} catch (error: any) {
-			console.error("Error toggling user enabled:", error);
-			toast.error(`操作失败: ${error.message || "未知错误"}`);
-		}
-	};
-
 	// 表格列定义
 	const columns: ColumnsType<UserTableRow> = [
 		{
@@ -241,24 +201,6 @@ export default function UserPage() {
 						}
 					>
 						<Icon icon="mdi:key-variant" size={16} />
-					</Button>
-					<Button
-						variant="ghost"
-						size="sm"
-						title={record.enabled ? "禁用用户" : "启用用户"}
-						onClick={() => handleToggleEnabled(record)}
-						className={record.enabled ? "text-orange-600" : "text-green-600"}
-					>
-						<Icon icon={record.enabled ? "mdi:account-off" : "mdi:account-check"} size={16} />
-					</Button>
-					<Button
-						variant="ghost"
-						size="sm"
-						title="删除用户"
-						onClick={() => handleDelete(record)}
-						className="text-red-600 hover:text-red-700"
-					>
-						<Icon icon="mingcute:delete-2-fill" size={16} />
 					</Button>
 				</div>
 			),

@@ -1,7 +1,6 @@
 import { Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
 import type { KeycloakGroup, KeycloakRole, KeycloakUser, UserProfileConfig } from "#/keycloak";
 import { KeycloakGroupService, KeycloakUserProfileService, KeycloakUserService } from "@/api/services/keycloakService";
 import { Icon } from "@/components/icon";
@@ -11,6 +10,7 @@ import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui/card";
 import { Label } from "@/ui/label";
+import { getAttributeDisplayName } from "@/utils/translation";
 import ResetPasswordModal from "./reset-password-modal";
 import UserModal from "./user-modal";
 import { ApprovalStatus } from "./approval-status";
@@ -74,20 +74,6 @@ export default function UserDetail() {
 			setLoading(false);
 		}
 	}, [id]);
-
-	// 切换用户启用状态
-	const handleToggleEnabled = async () => {
-		if (!user?.id) return;
-
-		try {
-			await KeycloakUserService.setUserEnabled(user.id, { enabled: !user.enabled });
-			toast.success(`用户已${user.enabled ? "禁用" : "启用"}`);
-			loadUserDetail();
-		} catch (error: any) {
-			console.error("Error toggling user enabled:", error);
-			toast.error(`操作失败: ${error.message || "未知错误"}`);
-		}
-	};
 
 	// 角色表格列定义
 	const roleColumns: ColumnsType<KeycloakRole> = [
@@ -192,11 +178,18 @@ export default function UserDetail() {
 		return filtered;
 	};
 
-	// 获取属性的显示名称
-	const getAttributeDisplayName = (name: string) => {
-		if (!userProfileConfig?.attributes) return name;
-		const attribute = userProfileConfig.attributes.find((attr) => attr.name === name);
-		return attribute?.displayName || name;
+	// 获取属性的显示名称（使用翻译工具）
+	const getTranslatedAttributeDisplayName = (name: string) => {
+		// 首先尝试使用我们创建的翻译工具
+		const translatedName = getAttributeDisplayName(name);
+
+		// 如果翻译工具没有找到翻译，回退到UserProfile配置中的displayName
+		if (translatedName === name && userProfileConfig?.attributes) {
+			const attribute = userProfileConfig.attributes.find((attr) => attr.name === name);
+			return attribute?.displayName || name;
+		}
+
+		return translatedName;
 	};
 
 	return (
@@ -221,10 +214,6 @@ export default function UserDetail() {
 					<Button variant="outline" onClick={() => setResetPasswordModal(true)}>
 						<Icon icon="mdi:key-variant" size={16} className="mr-2" />
 						重置密码
-					</Button>
-					<Button variant={user.enabled ? "destructive" : "default"} onClick={handleToggleEnabled}>
-						<Icon icon={user.enabled ? "mdi:account-off" : "mdi:account-check"} size={16} className="mr-2" />
-						{user.enabled ? "禁用" : "启用"}
 					</Button>
 				</div>
 			</div>
@@ -292,7 +281,7 @@ export default function UserDetail() {
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							{Object.entries(getFilteredUserAttributes()).map(([name, values]) => (
 								<div key={name} className="space-y-1">
-									<Label className="text-sm font-medium">{getAttributeDisplayName(name)}</Label>
+									<Label className="text-sm font-medium">{getTranslatedAttributeDisplayName(name)}</Label>
 									<div className="mt-1 space-y-1">
 										{values.length > 0 ? (
 											values.map((value) => (

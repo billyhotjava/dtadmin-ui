@@ -1,5 +1,4 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
 import { Helmet, HelmetProvider } from "react-helmet-async";
 import Logo from "@/assets/icons/ic-logo-badge.svg";
 import { MotionLazy } from "./components/animate/motion-lazy";
@@ -25,7 +24,6 @@ function App({ children }: { children: React.ReactNode }) {
 		<HelmetProvider>
 			<QueryClientProvider client={new QueryClient()}>
 				<ThemeProvider adapters={[AntdAdapter]}>
-					<VercelAnalytics debug={import.meta.env.PROD} />
 					<Helmet>
 						<title>{GLOBAL_CONFIG.appName}</title>
 						<link rel="icon" href={Logo} />

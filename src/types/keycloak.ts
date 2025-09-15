@@ -4,6 +4,19 @@
  */
 
 /**
+ * Keycloak翻译词表
+ */
+export interface KeycloakTranslations {
+	userManagement: Record<string, string>;
+	roleManagement: Record<string, string>;
+	groupManagement: Record<string, string>;
+	commonActions: Record<string, string>;
+	statusMessages: Record<string, string>;
+	formLabels: Record<string, string>;
+	pagination: Record<string, string>;
+}
+
+/**
  * Keycloak用户信息
  */
 export interface KeycloakUser {

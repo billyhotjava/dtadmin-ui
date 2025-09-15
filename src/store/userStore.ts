@@ -3,8 +3,11 @@ import { toast } from "sonner";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { UserInfo, UserToken } from "#/entity";
+import type { KeycloakTranslations } from "#/keycloak";
 import { StorageEnum } from "#/enum";
 import userService, { type SignInReq } from "@/api/services/userService";
+import { KeycloakLocalizationService } from "@/api/services/keycloakLocalizationService";
+import { updateLocalTranslations } from "@/utils/translation";
 
 type UserStore = {
 	userInfo: Partial<UserInfo>;
@@ -81,6 +84,15 @@ export const useSignIn = () => {
 
 			setUserToken({ accessToken, refreshToken });
 			setUserInfo(adaptedUser);
+
+			// 登录成功后获取并更新Keycloak翻译词条
+			try {
+				const translations: KeycloakTranslations = await KeycloakLocalizationService.getChineseTranslations();
+				updateLocalTranslations(translations);
+			} catch (translationError) {
+				console.warn("Failed to load Keycloak translations:", translationError);
+				// 不阻塞登录流程，即使翻译加载失败也继续
+			}
 		} catch (err) {
 			toast.error(err.message, {
 				position: "top-center",
