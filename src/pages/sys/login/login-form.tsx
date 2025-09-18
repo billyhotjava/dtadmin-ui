@@ -5,7 +5,6 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import type { SignInReq } from "@/api/services/userService";
-import { Icon } from "@/components/icon";
 import { GLOBAL_CONFIG } from "@/global-config";
 import { useSignIn } from "@/store/userStore";
 import { Button } from "@/ui/button";
@@ -114,34 +113,6 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 						{loading && <Loader2 className="animate-spin mr-2" />}
 						{t("sys.login.loginButton")}
 					</Button>
-
-					{/* 手机登录/二维码登录 */}
-					<div className="grid gap-4 sm:grid-cols-2">
-						<Button variant="outline" className="w-full" onClick={() => setLoginState(LoginStateEnum.MOBILE)}>
-							<Icon icon="uil:mobile-android" size={20} />
-							{t("sys.login.mobileSignInFormTitle")}
-						</Button>
-						<Button variant="outline" className="w-full" onClick={() => setLoginState(LoginStateEnum.QR_CODE)}>
-							<Icon icon="uil:qrcode-scan" size={20} />
-							{t("sys.login.qrSignInFormTitle")}
-						</Button>
-					</div>
-
-					{/* 其他登录方式 */}
-					<div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
-						<span className="relative z-10 bg-background px-2 text-muted-foreground">{t("sys.login.otherSignIn")}</span>
-					</div>
-					<div className="flex cursor-pointer justify-around text-2xl">
-						<Button variant="ghost" size="icon">
-							<Icon icon="mdi:github" size={24} />
-						</Button>
-						<Button variant="ghost" size="icon">
-							<Icon icon="mdi:wechat" size={24} />
-						</Button>
-						<Button variant="ghost" size="icon">
-							<Icon icon="ant-design:google-circle-filled" size={24} />
-						</Button>
-					</div>
 
 					{/* 注册 */}
 					<div className="text-center text-sm">
