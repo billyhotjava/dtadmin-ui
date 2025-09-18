@@ -86,19 +86,24 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 						)}
 					/>
 
-					{/* 记住我 */}
-					<div className="flex items-center space-x-2">
-						<Checkbox
-							id="remember"
-							checked={remember}
-							onCheckedChange={(checked) => setRemember(checked === "indeterminate" ? false : checked)}
-						/>
-						<label
-							htmlFor="remember"
-							className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-						>
-							{t("sys.login.rememberMe")}
-						</label>
+					{/* 记住我/忘记密码 */}
+					<div className="flex flex-row justify-between">
+						<div className="flex items-center space-x-2">
+							<Checkbox
+								id="remember"
+								checked={remember}
+								onCheckedChange={(checked) => setRemember(checked === "indeterminate" ? false : checked)}
+							/>
+							<label
+								htmlFor="remember"
+								className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+							>
+								{t("sys.login.rememberMe")}
+							</label>
+						</div>
+						<Button variant="link" onClick={() => setLoginState(LoginStateEnum.RESET_PASSWORD)} size="sm">
+							{t("sys.login.forgetPassword")}
+						</Button>
 					</div>
 
 					{/* 登录按钮 */}
@@ -132,6 +137,14 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 						</Button>
 						<Button variant="ghost" size="icon">
 							<Icon icon="ant-design:google-circle-filled" size={24} />
+						</Button>
+					</div>
+
+					{/* 注册 */}
+					<div className="text-center text-sm">
+						{t("sys.login.noAccount")}
+						<Button variant="link" className="px-1" onClick={() => setLoginState(LoginStateEnum.REGISTER)}>
+							{t("sys.login.signUpFormTitle")}
 						</Button>
 					</div>
 				</form>

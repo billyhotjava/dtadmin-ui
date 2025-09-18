@@ -25,7 +25,6 @@
 		},
 		"docs": "Document",
 		"login": {
-			"brandTitle": "Data Platform Manager",
 			"accountPlaceholder": "Please input username",
 			"backSignIn": "Back sign in",
 			"confirmPassword": "Confirm Password",

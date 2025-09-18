@@ -25,7 +25,6 @@
 			"errMsg505": "http版本不支持该请求!"
 		},
 		"login": {
-			"brandTitle": "数据管理平台(密级)",
 			"backSignIn": "返回",
 			"signInFormTitle": "登录到您的账户",
 			"mobileSignInFormTitle": "手机登录",
