@@ -6,9 +6,7 @@ import { GLOBAL_CONFIG } from "@/global-config";
 import SettingButton from "@/layouts/components/setting-button";
 import { useUserToken } from "@/store/userStore";
 import LoginForm from "./login-form";
-import MobileForm from "./mobile-form";
 import { LoginProvider } from "./providers/login-provider";
-import QrCodeFrom from "./qrcode-form";
 import RegisterForm from "./register-form";
 import ResetForm from "./reset-form";
 
@@ -32,8 +30,6 @@ function LoginPage() {
 					<div className="w-full max-w-xs">
 						<LoginProvider>
 							<LoginForm />
-							<MobileForm />
-							<QrCodeFrom />
 							<RegisterForm />
 							<ResetForm />
 						</LoginProvider>
