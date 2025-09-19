@@ -20,7 +20,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 	const [remember, setRemember] = useState(true);
 	const navigate = useNavigate();
 
-	const { loginState, setLoginState } = useLoginStateContext();
+	const { loginState } = useLoginStateContext();
 	const signIn = useSignIn();
 
 	const form = useForm<SignInReq>({
@@ -88,8 +88,8 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 						)}
 					/>
 
-					{/* 记住我/忘记密码 */}
-					<div className="flex flex-row justify-between">
+					{/* 记住我 */}
+					<div className="flex flex-row justify-start">
 						<div className="flex items-center space-x-2">
 							<Checkbox
 								id="remember"
@@ -103,9 +103,6 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 								{t("sys.login.rememberMe")}
 							</label>
 						</div>
-						<Button variant="link" onClick={() => setLoginState(LoginStateEnum.RESET_PASSWORD)} size="sm">
-							{t("sys.login.forgetPassword")}
-						</Button>
 					</div>
 
 					{/* 登录按钮 */}
@@ -113,14 +110,6 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 						{loading && <Loader2 className="animate-spin mr-2" />}
 						{t("sys.login.loginButton")}
 					</Button>
-
-					{/* 注册 */}
-					<div className="text-center text-sm">
-						{t("sys.login.noAccount")}
-						<Button variant="link" className="px-1" onClick={() => setLoginState(LoginStateEnum.REGISTER)}>
-							{t("sys.login.signUpFormTitle")}
-						</Button>
-					</div>
 				</form>
 			</Form>
 		</div>
