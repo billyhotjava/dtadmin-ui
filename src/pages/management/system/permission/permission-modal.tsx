@@ -1,14 +1,15 @@
 // import { useUserPermission } from "@/store/userStore";
-import { Button } from "@/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/ui/form";
-import { Input } from "@/ui/input";
-import { ToggleGroup, ToggleGroupItem } from "@/ui/toggle-group";
+
 import { AutoComplete, TreeSelect } from "antd";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import type { Permission_Old } from "#/entity";
 import { BasicStatus, PermissionType } from "#/enum";
+import { Button } from "@/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/ui/form";
+import { Input } from "@/ui/input";
+import { ToggleGroup, ToggleGroupItem } from "@/ui/toggle-group";
 
 // Constants
 const ENTRY_PATH = "/src/pages";
@@ -188,7 +189,9 @@ export default function PermissionModal({ title, show, formValue, onOk, onCancel
 										<FormControl>
 											<AutoComplete
 												options={compOptions}
-												filterOption={(input, option) => ((option?.label || "") as string).toLowerCase().includes(input.toLowerCase())}
+												filterOption={(input, option) =>
+													((option?.label || "") as string).toLowerCase().includes(input.toLowerCase())
+												}
 												value={field.value || ""}
 												onChange={(value) => field.onChange(value || null)}
 											/>

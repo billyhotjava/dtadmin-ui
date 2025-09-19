@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import { DB_USER } from "@/_mock/assets_backup";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { useAuthCheck } from "@/components/auth/use-auth";
@@ -7,7 +8,6 @@ import { Button } from "@/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/ui/tabs";
 import { Text } from "@/ui/typography";
-import { Link } from "react-router";
 
 const Component_Auth_1 = `
 <AuthGuard
@@ -111,7 +111,19 @@ export default function PermissionPage() {
 					<div className="flex items-center gap-2">
 						<Text variant="body1">当前用户角色：</Text>
 						{permissions && permissions.length > 0 ? (
-							<Text variant="body1">[{roles?.map((role) => role.name).join(", ")}]</Text>
+							<Text variant="body1">
+								[
+								{roles
+									?.map((role) => {
+										// 处理字符串格式和对象格式
+										if (typeof role === "string") {
+											return role;
+										}
+										return role.name;
+									})
+									.join(", ")}
+								]
+							</Text>
 						) : (
 							<Text variant="body1">[]</Text>
 						)}
@@ -119,7 +131,19 @@ export default function PermissionPage() {
 					<div className="flex items-center gap-2">
 						<Text variant="body1">当前用户权限：</Text>
 						{permissions && permissions.length > 0 ? (
-							<Text variant="body1">[{permissions?.map((permission) => permission.code).join(", ")}]</Text>
+							<Text variant="body1">
+								[
+								{permissions
+									?.map((permission) => {
+										// 处理字符串格式和对象格式
+										if (typeof permission === "string") {
+											return permission;
+										}
+										return permission.code;
+									})
+									.join(", ")}
+								]
+							</Text>
 						) : (
 							<Text variant="body1">[]</Text>
 						)}

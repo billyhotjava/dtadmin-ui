@@ -1,10 +1,10 @@
+import { Upload } from "antd";
+import type { UploadChangeParam, UploadFile, UploadProps } from "antd/es/upload";
+import { useState } from "react";
 import { Icon } from "@/components/icon";
 import { themeVars } from "@/theme/theme.css";
 import { Text } from "@/ui/typography";
 import { fBytes } from "@/utils/format-number";
-import { Upload } from "antd";
-import type { UploadChangeParam, UploadFile, UploadProps } from "antd/es/upload";
-import { useState } from "react";
 import { StyledUploadAvatar } from "./styles";
 import { beforeAvatarUpload, getBlobUrl } from "./utils";
 

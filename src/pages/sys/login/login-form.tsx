@@ -1,6 +1,10 @@
-import { DB_USER } from "@/_mock/assets_backup";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router";
+import { toast } from "sonner";
 import type { SignInReq } from "@/api/services/userService";
-import { Icon } from "@/components/icon";
 import { GLOBAL_CONFIG } from "@/global-config";
 import { useSignIn } from "@/store/userStore";
 import { Button } from "@/ui/button";
@@ -8,27 +12,21 @@ import { Checkbox } from "@/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/ui/form";
 import { Input } from "@/ui/input";
 import { cn } from "@/utils";
-import { Loader2 } from "lucide-react";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router";
-import { toast } from "sonner";
 import { LoginStateEnum, useLoginStateContext } from "./providers/login-provider";
 
 export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRef<"form">) {
 	const { t } = useTranslation();
 	const [loading, setLoading] = useState(false);
 	const [remember, setRemember] = useState(true);
-	const navigatge = useNavigate();
+	const navigate = useNavigate();
 
-	const { loginState, setLoginState } = useLoginStateContext();
+	const { loginState } = useLoginStateContext();
 	const signIn = useSignIn();
 
 	const form = useForm<SignInReq>({
 		defaultValues: {
-			username: DB_USER[0].username,
-			password: DB_USER[0].password,
+			username: "",
+			password: "",
 		},
 	});
 
@@ -38,10 +36,14 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 		setLoading(true);
 		try {
 			await signIn(values);
-			navigatge(GLOBAL_CONFIG.defaultRoute, { replace: true });
+			// 登录成功后跳转到默认页面
+			navigate(GLOBAL_CONFIG.defaultRoute, { replace: true });
 			toast.success(t("sys.login.loginSuccessTitle"), {
 				closeButton: true,
 			});
+		} catch (error) {
+			// 错误已在signIn中处理，这里不需要额外处理
+			console.error("Login failed:", error);
 		} finally {
 			setLoading(false);
 		}
@@ -64,7 +66,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 							<FormItem>
 								<FormLabel>{t("sys.login.userName")}</FormLabel>
 								<FormControl>
-									<Input placeholder={DB_USER.map((user) => user.username).join("/")} {...field} />
+									<Input placeholder="请输入用户名" {...field} />
 								</FormControl>
 								<FormMessage />
 							</FormItem>
@@ -79,7 +81,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 							<FormItem>
 								<FormLabel>{t("sys.login.password")}</FormLabel>
 								<FormControl>
-									<Input type="password" placeholder={DB_USER[0].password} {...field} suppressHydrationWarning />
+									<Input type="password" placeholder="请输入密码" {...field} suppressHydrationWarning />
 								</FormControl>
 								<FormMessage />
 							</FormItem>
@@ -87,6 +89,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 					/>
 
 					{/* 记住我 */}
+<<<<<<< HEAD
 					<div className="flex items-center space-x-2">
 						<Checkbox
 							id="remember"
@@ -99,6 +102,22 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 						>
 							{t("sys.login.rememberMe")}
 						</label>
+=======
+					<div className="flex flex-row justify-start">
+						<div className="flex items-center space-x-2">
+							<Checkbox
+								id="remember"
+								checked={remember}
+								onCheckedChange={(checked) => setRemember(checked === "indeterminate" ? false : checked)}
+							/>
+							<label
+								htmlFor="remember"
+								className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+							>
+								{t("sys.login.rememberMe")}
+							</label>
+						</div>
+>>>>>>> origin/1.0.0
 					</div>
 
 					{/* 登录按钮 */}
@@ -106,6 +125,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 						{loading && <Loader2 className="animate-spin mr-2" />}
 						{t("sys.login.loginButton")}
 					</Button>
+<<<<<<< HEAD
 
 					{/* 手机登录/二维码登录 */}
 					<div className="grid gap-4 sm:grid-cols-2">
@@ -134,6 +154,8 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 							<Icon icon="ant-design:google-circle-filled" size={24} />
 						</Button>
 					</div>
+=======
+>>>>>>> origin/1.0.0
 				</form>
 			</Form>
 		</div>

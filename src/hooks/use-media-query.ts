@@ -1,6 +1,6 @@
+import { useEffect, useMemo, useState } from "react";
 import { breakpointsTokens } from "@/theme/tokens/breakpoints";
 import { removePx } from "@/utils/theme";
-import { useEffect, useMemo, useState } from "react";
 
 type MediaQueryConfig = {
 	minWidth?: number;

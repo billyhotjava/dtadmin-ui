@@ -1,5 +1,5 @@
-import { rgbAlpha } from "@/utils/theme";
 import { ThemeColorPresets } from "#/enum";
+import { rgbAlpha } from "@/utils/theme";
 
 export const presetsColors = {
 	[ThemeColorPresets.Default]: {

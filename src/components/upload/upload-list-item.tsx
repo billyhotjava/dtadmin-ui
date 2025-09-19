@@ -1,12 +1,12 @@
+import type { ItemRender } from "antd/es/upload/interface";
+import { m } from "motion/react";
+import { useEffect, useState } from "react";
 import { varFade } from "@/components/animate/variants";
 import { Icon } from "@/components/icon";
 import { Button } from "@/ui/button";
 import { Card } from "@/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/ui/tooltip";
 import { fBytes } from "@/utils/format-number";
-import type { ItemRender } from "antd/es/upload/interface";
-import { m } from "motion/react";
-import { useEffect, useState } from "react";
 import { getBlobUrl, getFileFormat, getFileThumb } from "./utils";
 
 type Props = {

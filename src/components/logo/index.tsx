@@ -1,5 +1,5 @@
-import { cn } from "@/utils";
 import { NavLink } from "react-router";
+import { cn } from "@/utils";
 import { Icon } from "../icon";
 
 interface Props {

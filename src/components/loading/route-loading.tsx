@@ -1,5 +1,5 @@
-import { Progress } from "@/ui/progress";
 import { useEffect, useState } from "react";
+import { Progress } from "@/ui/progress";
 
 export function RouteLoadingProgress() {
 	const [progress, setProgress] = useState(0);

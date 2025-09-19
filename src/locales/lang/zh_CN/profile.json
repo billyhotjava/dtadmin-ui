@@ -1,0 +1,9 @@
+{
+	"profile": {
+		"attributes": {
+			"fullname": "姓名",
+			"data_levels": "数据访问等级",
+			"person_security_level": "人员安全等级"
+		}
+	}
+}

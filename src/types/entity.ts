@@ -12,9 +12,12 @@ export interface UserInfo {
 	username: string;
 	password?: string;
 	avatar?: string;
-	roles?: Role[];
+	firstName?: string;
+	lastName?: string;
+	enabled?: boolean;
+	roles?: Role[] | string[]; // 支持两种格式：对象数组或字符串数组
 	status?: BasicStatus;
-	permissions?: Permission[];
+	permissions?: Permission[] | string[]; // 支持两种格式：对象数组或字符串数组
 	menu?: MenuTree[];
 }
 
@@ -82,7 +85,9 @@ export interface Menu extends CommonOptions, MenuMetaInfo {
 	type: PermissionType;
 }
 
-export type MenuMetaInfo = Partial<Pick<NavItemDataProps, "path" | "icon" | "caption" | "info" | "disabled" | "auth" | "hidden">> & {
+export type MenuMetaInfo = Partial<
+	Pick<NavItemDataProps, "path" | "icon" | "caption" | "info" | "disabled" | "auth" | "hidden">
+> & {
 	externalLink?: URL;
 	component?: string;
 };
@@ -90,3 +95,22 @@ export type MenuMetaInfo = Partial<Pick<NavItemDataProps, "path" | "icon" | "cap
 export type MenuTree = Menu & {
 	children?: MenuTree[];
 };
+
+// 审计日志相关类型
+export interface AuditLog {
+	id: number;
+	action: string;
+	target: string;
+	actor: string; // 后端实际字段名（对应前端的 operator 概念）
+	details: string; // 后端实际字段名（对应前端的 content 概念）
+	at: string; // 后端实际字段名（对应前端的 createdAt 概念）
+	result?: string; // 后端实际字段名
+}
+
+export interface AuditLogPageResponse {
+	data: AuditLog[];
+	totalElements: number;
+	number: number;
+	size: number;
+	totalPages: number;
+}

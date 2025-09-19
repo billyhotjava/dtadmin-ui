@@ -25,7 +25,12 @@
 		},
 		"docs": "Document",
 		"login": {
+<<<<<<< HEAD
 			"brandTitle": "Data Platform Manager",
+=======
+			"brandName": "Data Platform Manager",
+			"brandIllustrationAlt": "Futuristic data platform illustration",
+>>>>>>> origin/1.0.0
 			"accountPlaceholder": "Please input username",
 			"backSignIn": "Back sign in",
 			"confirmPassword": "Confirm Password",
@@ -72,7 +77,6 @@
 		},
 		"nav": {
 			"dashboard": "Dashboard",
-			"pages": "Pages",
 			"others": "Others",
 			"ui": "UI",
 			"custom_ui_components": "Custom UI Components",
@@ -102,7 +106,7 @@
 			"label": "Item Label",
 			"permission": "Permission",
 			"permission.page_test": "Page Permission Test",
-			"management": "Management",
+			"management": "System Management",
 			"markdown": "Markdown",
 			"menulevel": {
 				"1a": "Menu Level 1a",
@@ -118,13 +122,21 @@
 				"index": "Menu Level"
 			},
 			"scroll": "Scroll",
-			"system": {
-				"index": "System",
+			"usermgmt": {
+				"index": "User Management",
 				"organization": "Organization",
 				"permission": "Permission",
 				"role": "Role",
 				"user": "User",
-				"user_detail": "User Detail"
+				"user_detail": "User Detail",
+				"system": {
+					"index": "System Management",
+					"user": "User Management",
+					"role": "Role Management",
+					"permission": "Permission Management",
+					"approval": "Approval Management",
+					"audit_log": "Audit Log"
+				}
 			},
 			"toast": "Toast",
 			"token_expired": "Token Expired",

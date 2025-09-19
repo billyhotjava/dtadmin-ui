@@ -1,8 +1,8 @@
-import { getStringItem } from "@/utils/storage";
 import i18n from "i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import { initReactI18next } from "react-i18next";
 import { LocalEnum, StorageEnum } from "#/enum";
+import { getStringItem } from "@/utils/storage";
 import en_US from "./lang/en_US";
 import zh_CN from "./lang/zh_CN";
 
@@ -22,7 +22,7 @@ i18n
 	.init({
 		debug: true,
 		lng: defaultLng, // localstorage -> i18nextLng: en_US
-		fallbackLng: LocalEnum.en_US,
+		fallbackLng: LocalEnum.zh_CN,
 		interpolation: {
 			escapeValue: false, // not needed for react as it escapes by default
 		},

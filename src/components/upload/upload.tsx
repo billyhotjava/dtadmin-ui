@@ -1,10 +1,9 @@
+import type { UploadProps } from "antd";
 import { Upload as AntdUpload } from "antd";
 import type { ItemRender } from "antd/es/upload/interface";
 import { StyledUpload } from "./styles";
 import UploadIllustration from "./upload-illustration";
 import UploadListItem from "./upload-list-item";
-
-import type { UploadProps } from "antd";
 
 const { Dragger } = AntdUpload;
 

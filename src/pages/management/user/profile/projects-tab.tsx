@@ -1,3 +1,5 @@
+import { faker } from "@faker-js/faker";
+import dayjs from "dayjs";
 import { fakeAvatars } from "@/_mock/utils";
 import { AvatarGroup } from "@/components/avatar-group";
 import { Icon } from "@/components/icon";
@@ -6,8 +8,6 @@ import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
 import { Card, CardContent } from "@/ui/card";
 import { Text } from "@/ui/typography";
-import { faker } from "@faker-js/faker";
-import dayjs from "dayjs";
 
 export default function ProjectsTab() {
 	const items = [

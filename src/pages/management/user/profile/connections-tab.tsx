@@ -1,9 +1,9 @@
+import { faker } from "@faker-js/faker";
 import { Icon } from "@/components/icon";
 import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
 import { Card } from "@/ui/card";
 import { Text } from "@/ui/typography";
-import { faker } from "@faker-js/faker";
 
 export default function ConnectionsTab() {
 	const items = [

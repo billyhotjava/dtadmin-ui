@@ -1,7 +1,7 @@
+import type { CSSProperties } from "react";
+import * as React from "react";
 import { Avatar, AvatarFallback } from "@/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/ui/tooltip";
-import * as React from "react";
-import type { CSSProperties } from "react";
 
 interface AvatarGroupProps {
 	children: React.ReactNode;

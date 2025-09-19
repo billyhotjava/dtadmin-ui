@@ -1,3 +1,6 @@
+import { faker } from "@faker-js/faker";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { UploadAvatar } from "@/components/upload";
 import { useUserInfo } from "@/store/userStore";
 import { Button } from "@/ui/button";
@@ -7,9 +10,6 @@ import { Input } from "@/ui/input";
 import { Switch } from "@/ui/switch";
 import { Textarea } from "@/ui/textarea";
 import { Text } from "@/ui/typography";
-import { faker } from "@faker-js/faker";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
 
 type FieldType = {
 	name?: string;

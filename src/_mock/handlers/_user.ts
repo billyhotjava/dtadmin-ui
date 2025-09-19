@@ -1,8 +1,8 @@
+import { faker } from "@faker-js/faker";
+import { HttpResponse, http } from "msw";
 import { UserApi } from "@/api/services/userService";
 import { ResultStatus } from "@/types/enum";
 import { convertFlatToTree } from "@/utils/tree";
-import { faker } from "@faker-js/faker";
-import { http, HttpResponse } from "msw";
 import { DB_MENU, DB_PERMISSION, DB_ROLE, DB_ROLE_PERMISSION, DB_USER, DB_USER_ROLE } from "../assets_backup";
 
 const signIn = http.post(`/api${UserApi.SignIn}`, async ({ request }) => {

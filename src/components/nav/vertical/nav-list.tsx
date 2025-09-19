@@ -1,6 +1,6 @@
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/ui/collapsible";
 import { useState } from "react";
 import { useLocation } from "react-router";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/ui/collapsible";
 import type { NavListProps } from "../types";
 import { NavItem } from "./nav-item";
 
