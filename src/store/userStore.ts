@@ -74,7 +74,7 @@ export const useSignIn = () => {
 				// 处理权限信息 - 保持字符串数组格式
 				permissions: Array.isArray(user.permissions) ? user.permissions : [],
 				// 为用户设置默认头像
-				avatar: user.avatar || "/logo.svg",
+				avatar: user.avatar || "/src/assets/icons/ic-user.svg",
 				// 确保必要的字段存在
 				firstName: user.firstName || "",
 				lastName: user.lastName || "",
