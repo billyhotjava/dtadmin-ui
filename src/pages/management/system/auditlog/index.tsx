@@ -1,12 +1,12 @@
 import { Button, Modal, Table, Tag, Tooltip } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import { Eye } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { AuditLog } from "#/entity";
 import { AuditLogService } from "@/api/services/auditLogService";
 import { Card, CardContent, CardHeader } from "@/ui/card";
 import { Text } from "@/ui/typography";
-import { EyeOutlined } from "@ant-design/icons";
 
 export default function AuditLogPage() {
 	const [loading, setLoading] = useState(false);
@@ -107,7 +107,7 @@ export default function AuditLogPage() {
 			key: "action",
 			width: 100,
 			render: (_, record) => (
-				<Button type="link" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>
+				<Button type="link" icon={<Eye className="h-4 w-4" />} onClick={() => handleViewDetail(record)}>
 					查看详情
 				</Button>
 			),
