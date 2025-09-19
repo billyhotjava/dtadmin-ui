@@ -226,7 +226,7 @@ export interface UserProfileSelector {
  */
 export interface UserProfileAttribute {
 	name: string;
-	displayName?: string;
+	displayName: string;
 	validations?: Record<string, any>;
 	annotations?: Record<string, any>;
 	required?: UserProfileRequired;

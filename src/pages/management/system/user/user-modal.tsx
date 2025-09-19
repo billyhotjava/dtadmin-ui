@@ -12,6 +12,7 @@ import { Input } from "@/ui/input";
 import { Label } from "@/ui/label";
 import { Switch } from "@/ui/switch";
 import { UserProfileField } from "./user-profile-field";
+import { t } from "@/locales/i18n";
 
 interface UserModalProps {
 	open: boolean;
@@ -76,18 +77,18 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 	// UserProfile相关状态
 	const [userProfileConfig, setUserProfileConfig] = useState<UserProfileConfig | null>(null);
 	const [profileLoading, setProfileLoading] = useState(false);
-	const [profileError, setProfileError] = useState<string>("");
+	//const [setProfileError] = useState<string>("");
 
 	// 加载UserProfile配置
 	const loadUserProfileConfig = useCallback(async () => {
 		setProfileLoading(true);
-		setProfileError("");
+		//setProfileError("");
 		try {
 			const config = await KeycloakUserProfileService.getUserProfileConfig();
 			setUserProfileConfig(config);
 		} catch (err) {
 			console.error("Error loading user profile config:", err);
-			setProfileError("加载用户配置文件失败");
+			//setProfileError("加载用户配置文件失败");
 		} finally {
 			setProfileLoading(false);
 		}
@@ -202,7 +203,7 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 				}
 
 				// 检查是否为必填字段
-				if (attribute.required?.roles && attribute.required.roles.length > 0) {
+				if (attribute.required) {
 					const value = formData.attributes[attribute.name];
 					// 检查值是否为空
 					if (
@@ -210,7 +211,8 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 						(Array.isArray(value) && (value.length === 0 || value.every((v) => v === ""))) ||
 						(typeof value === "string" && (!(value as string).trim() || (value as string) === ""))
 					) {
-						setError(`"${attribute.displayName || attribute.name}" 是必填字段`);
+						console.log(attribute.displayName);
+						setError(`"${t(attribute.displayName.replace(/\$\{([^}]*)\}/g, "$1")) || attribute.name}" 是必填字段`);
 						return;
 					}
 				}
@@ -395,7 +397,7 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 								</div>
 							</div>
 
-							<div className="grid grid-cols-2 gap-4">
+							<div className="grid grid-cols-2 gap-4 hidden">
 								<div className="space-y-2">
 									<Label htmlFor="firstName">名</Label>
 									<Input
@@ -416,6 +418,39 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 								</div>
 							</div>
 
+							{/* UserProfile字段 (基于realm配置) */}
+							{userProfileConfig?.attributes && userProfileConfig.attributes.length > 0 && (
+								<div className="">
+									{profileLoading ? (
+										<div className="flex items-center justify-center py-4">
+											<Icon icon="mdi:loading" className="animate-spin mr-2" />
+											<span>加载配置中...</span>
+										</div>
+									) : (
+										<div className="grid grid-cols-2 gap-4">
+											{userProfileConfig.attributes
+												.filter((attr) => !["username", "email", "firstName", "lastName", "locale"].includes(attr.name))
+												.map((attribute) => (
+													<UserProfileField
+														key={attribute.name}
+														attribute={attribute}
+														value={formData.attributes[attribute.name]}
+														onChange={(value) => {
+															setFormData((prev) => ({
+																...prev,
+																attributes: {
+																	...prev.attributes,
+																	[attribute.name]: Array.isArray(value) ? value : [value],
+																},
+															}));
+														}}
+													/>
+												))}
+										</div>
+									)}
+								</div>
+							)}
+
 							<div className="grid grid-cols-2 gap-4">
 								<div className="flex items-center space-x-2">
 									<Switch
@@ -425,7 +460,7 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 									/>
 									<Label htmlFor="enabled">启用用户</Label>
 								</div>
-								<div className="flex items-center space-x-2">
+								<div className="flex items-center space-x-2 hidden">
 									<Switch
 										id="emailVerified"
 										checked={formData.emailVerified}
@@ -436,46 +471,6 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 							</div>
 						</CardContent>
 					</Card>
-
-					{/* UserProfile字段 (基于realm配置) */}
-					{userProfileConfig?.attributes && userProfileConfig.attributes.length > 0 && (
-						<Card>
-							<CardHeader>
-								<CardTitle className="text-lg">附加属性</CardTitle>
-								{profileError && <p className="text-sm text-destructive">{profileError}</p>}
-							</CardHeader>
-							<CardContent className="space-y-4">
-								{profileLoading ? (
-									<div className="flex items-center justify-center py-4">
-										<Icon icon="mdi:loading" className="animate-spin mr-2" />
-										<span>加载配置中...</span>
-									</div>
-								) : (
-									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-										{userProfileConfig.attributes
-											.filter((attr) => !["username", "email", "firstName", "lastName"].includes(attr.name))
-											.map((attribute) => (
-												<UserProfileField
-													key={attribute.name}
-													attribute={attribute}
-													value={formData.attributes[attribute.name]}
-													onChange={(value) => {
-														setFormData((prev) => ({
-															...prev,
-															attributes: {
-																...prev.attributes,
-																[attribute.name]: Array.isArray(value) ? value : [value],
-															},
-														}));
-													}}
-												/>
-											))}
-									</div>
-								)}
-							</CardContent>
-						</Card>
-					)}
-
 					{/* 角色分配 (仅编辑模式) */}
 					{mode === "edit" && user?.id && (
 						<Card>

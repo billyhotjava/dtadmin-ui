@@ -5,6 +5,7 @@ import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
 import { Input } from "@/ui/input";
 import { Label } from "@/ui/label";
+import { t } from "@/locales/i18n";
 
 interface UserProfileFieldProps {
 	attribute: UserProfileAttribute;
@@ -38,7 +39,7 @@ export function UserProfileField({ attribute, value, onChange, disabled = false 
 		if (attribute.multivalued) {
 			onChange(newValues);
 		} else {
-			onChange(newValues.length > 0 ? newValues[0] : "");
+			onChange(newValues.length > 0 ? newValues[0] : []);
 		}
 	};
 
@@ -141,26 +142,26 @@ export function UserProfileField({ attribute, value, onChange, disabled = false 
 	return (
 		<div className="space-y-2">
 			<Label>
-				{attribute.displayName || attribute.name}
-				{attribute.required?.roles && attribute.required.roles.length > 0 && (
-					<span className="text-destructive ml-1">*</span>
-				)}
+				{t(attribute.displayName.replace(/\$\{([^}]*)\}/g, "$1")) || attribute.name}
+				{attribute.required && <span className="text-destructive ml-1">*</span>}
 			</Label>
 
 			{/* 已选择的值 */}
-			<div className="flex flex-wrap gap-2">
-				{values.map((value) => (
-					<Badge key={value} variant="default">
-						{value}
-						{!disabled && (
-							<Button variant="ghost" size="sm" className="ml-1 h-4 w-4 p-0" onClick={() => handleRemoveValue(value)}>
-								<Icon icon="mdi:close" size={12} />
-							</Button>
-						)}
-					</Badge>
-				))}
-				{values.length === 0 && <span className="text-muted-foreground text-sm">-</span>}
-			</div>
+			{!disabled && predefinedOptions.length > 0 && values.length > 0 && (
+				<div className="flex flex-wrap gap-2">
+					{values.map((value) => (
+						<Badge key={value} variant="default">
+							{value}
+							{!disabled && (
+								<Button variant="ghost" size="sm" className="ml-1 h-4 w-4 p-0" onClick={() => handleRemoveValue(value)}>
+									<Icon icon="mdi:close" size={12} />
+								</Button>
+							)}
+						</Badge>
+					))}
+					{values.length === 0 && <span className="text-muted-foreground text-sm">-</span>}
+				</div>
+			)}
 
 			{/* 可用的选项 */}
 			{!disabled && predefinedOptions.length > 0 && (

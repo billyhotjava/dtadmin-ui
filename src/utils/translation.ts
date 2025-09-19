@@ -26,7 +26,8 @@ export const updateLocalTranslations = (translations: KeycloakTranslations) => {
  */
 export const getAttributeDisplayName = (attributeName: string): string => {
 	// 尝试从keycloak翻译资源中获取
-	const key = `keycloak.userManagement.${attributeName}`;
+	const key = `profile.attributes.${attributeName}`;
+	//const key = attributeName.replace(/\$\{([^}]*)\}/g, '$1');
 	const translated = i18n.t(key);
 
 	// 如果翻译结果和key相同，说明没有找到对应的翻译，返回原属性名

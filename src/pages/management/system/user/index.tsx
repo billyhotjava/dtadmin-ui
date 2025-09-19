@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader } from "@/ui/card";
 import { Input } from "@/ui/input";
 import ResetPasswordModal from "./reset-password-modal";
 import UserModal from "./user-modal";
+import { t } from "@/locales/i18n";
 
 export default function UserPage() {
 	const { push } = useRouter();
@@ -105,7 +106,7 @@ export default function UserPage() {
 	// 表格列定义
 	const columns: ColumnsType<UserTableRow> = [
 		{
-			title: "用户信息",
+			title: "用户名",
 			dataIndex: "username",
 			width: 250,
 			render: (_, record) => (
@@ -121,15 +122,6 @@ export default function UserPage() {
 			),
 		},
 		{
-			title: "姓名",
-			dataIndex: "name",
-			width: 150,
-			render: (_, record) => {
-				const fullName = [record.firstName, record.lastName].filter(Boolean).join(" ");
-				return fullName || "-";
-			},
-		},
-		{
 			title: "状态",
 			dataIndex: "enabled",
 			align: "center",
@@ -138,21 +130,12 @@ export default function UserPage() {
 				<Badge variant={enabled ? "success" : "destructive"}>{enabled ? "启用" : "禁用"}</Badge>
 			),
 		},
-		{
-			title: "邮箱验证",
-			dataIndex: "emailVerified",
-			align: "center",
-			width: 100,
-			render: (verified: boolean) => (
-				<Badge variant={verified ? "success" : "secondary"}>{verified ? "已验证" : "未验证"}</Badge>
-			),
-		},
 
 		// 动态添加UserProfile字段列
 		...(userProfileConfig?.attributes
-			?.filter((attr) => !["username", "email", "firstName", "lastName"].includes(attr.name))
+			?.filter((attr) => !["username", "email", "firstName", "lastName", "locale"].includes(attr.name))
 			.map((attr) => ({
-				title: attr.displayName || attr.name,
+				title: t(attr.displayName.replace(/\$\{([^}]*)\}/g, "$1")) || attr.name,
 				dataIndex: ["attributes", attr.name],
 				width: 150,
 				render: (value: string[] | undefined) => {

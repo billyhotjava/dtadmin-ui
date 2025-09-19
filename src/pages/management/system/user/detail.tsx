@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from "@/ui/alert";
 import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui/card";
-import { Label } from "@/ui/label";
+
 import { getAttributeDisplayName } from "@/utils/translation";
 import ResetPasswordModal from "./reset-password-modal";
 import UserModal from "./user-modal";
@@ -150,7 +150,7 @@ export default function UserDetail() {
 	const getUserProfileAttributeNames = () => {
 		if (!userProfileConfig?.attributes) return [];
 		return userProfileConfig.attributes
-			.filter((attr) => !["username", "email", "firstName", "lastName"].includes(attr.name))
+			.filter((attr) => !["username", "email", "firstName", "lastName", "locale"].includes(attr.name))
 			.map((attr) => attr.name);
 	};
 
@@ -185,8 +185,8 @@ export default function UserDetail() {
 
 		// 如果翻译工具没有找到翻译，回退到UserProfile配置中的displayName
 		if (translatedName === name && userProfileConfig?.attributes) {
-			const attribute = userProfileConfig.attributes.find((attr) => attr.name === name);
-			return attribute?.displayName || name;
+			//	const attribute = userProfileConfig.attributes.find((attr) => attr.name === name);
+			//	return attribute?.displayName || name;
 		}
 
 		return translatedName;
@@ -226,20 +226,8 @@ export default function UserDetail() {
 				<CardContent>
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 						<div>
-							<span className="text-sm font-medium text-muted-foreground">用户ID</span>
-							<p className="mt-1 text-sm font-mono">{user.id}</p>
-						</div>
-						<div>
 							<span className="text-sm font-medium text-muted-foreground">用户名</span>
 							<p className="mt-1">{user.username}</p>
-						</div>
-						<div>
-							<span className="text-sm font-medium text-muted-foreground">邮箱</span>
-							<p className="mt-1">{user.email || "-"}</p>
-						</div>
-						<div>
-							<span className="text-sm font-medium text-muted-foreground">姓名</span>
-							<p className="mt-1">{[user.firstName, user.lastName].filter(Boolean).join(" ") || "-"}</p>
 						</div>
 						<div>
 							<span className="text-sm font-medium text-muted-foreground">状态</span>
@@ -248,19 +236,31 @@ export default function UserDetail() {
 							</div>
 						</div>
 						<div>
-							<span className="text-sm font-medium text-muted-foreground">邮箱验证</span>
-							<div className="mt-1">
-								<Badge variant={user.emailVerified ? "success" : "secondary"}>
-									{user.emailVerified ? "已验证" : "未验证"}
-								</Badge>
-							</div>
-						</div>
-						<div>
 							<span className="text-sm font-medium text-muted-foreground">审批状态</span>
 							<div className="mt-1">
 								<ApprovalStatus userId={user.id || ""} />
 							</div>
 						</div>
+
+						{Object.entries(getFilteredUserAttributes()).map(([name, values]) => (
+							<div key={name}>
+								<span className="text-sm font-medium text-muted-foreground">
+									{getTranslatedAttributeDisplayName(name)}
+								</span>
+								<div className="mt-1">
+									{values.length > 0 ? (
+										values.map((value) => (
+											<Badge key={value} variant="outline" className="mr-1 mb-1">
+												{value}
+											</Badge>
+										))
+									) : (
+										<span className="text-muted-foreground text-sm">-</span>
+									)}
+								</div>
+							</div>
+						))}
+
 						{user.createdTimestamp && (
 							<div>
 								<span className="text-sm font-medium text-muted-foreground">创建时间</span>
@@ -271,44 +271,11 @@ export default function UserDetail() {
 				</CardContent>
 			</Card>
 
-			{/* 用户附加属性 */}
-			{userProfileConfig?.attributes && userProfileConfig.attributes.length > 0 && (
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-lg">附加属性</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							{Object.entries(getFilteredUserAttributes()).map(([name, values]) => (
-								<div key={name} className="space-y-1">
-									<Label className="text-sm font-medium">{getTranslatedAttributeDisplayName(name)}</Label>
-									<div className="mt-1 space-y-1">
-										{values.length > 0 ? (
-											values.map((value) => (
-												<Badge key={value} variant="outline" className="mr-1 mb-1">
-													{value}
-												</Badge>
-											))
-										) : (
-											<span className="text-muted-foreground text-sm">-</span>
-										)}
-									</div>
-								</div>
-							))}
-						</div>
-					</CardContent>
-				</Card>
-			)}
-
 			{/* 用户角色 */}
 			<Card>
 				<CardHeader>
 					<CardTitle className="flex items-center justify-between">
 						<span>用户角色 ({userRoles.length})</span>
-						<Button variant="outline" size="sm" onClick={() => setEditModal(true)}>
-							<Icon icon="solar:settings-bold-duotone" size={16} className="mr-2" />
-							管理角色
-						</Button>
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
@@ -324,7 +291,7 @@ export default function UserDetail() {
 			</Card>
 
 			{/* 用户组 */}
-			<Card>
+			<Card className="hidden">
 				<CardHeader>
 					<CardTitle>所属组 ({userGroups.length})</CardTitle>
 				</CardHeader>
