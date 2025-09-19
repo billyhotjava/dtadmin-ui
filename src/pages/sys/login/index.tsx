@@ -54,7 +54,7 @@ function LoginPage() {
 				/>
 			</div>
 
-			<div className="absolute right-2 top-0 flex flex-row">
+			<div className="absolute right-2 top-0 flex flex-row hidden">
 				<LocalePicker />
 				<SettingButton />
 			</div>

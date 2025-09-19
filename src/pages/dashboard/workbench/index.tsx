@@ -13,7 +13,6 @@ import { Card, CardContent } from "@/ui/card";
 import { Progress } from "@/ui/progress";
 import { Text, Title } from "@/ui/typography";
 import { rgbAlpha } from "@/utils/theme";
-import BannerCard from "./banner-card";
 
 const quickStats = [
 	{
@@ -115,7 +114,6 @@ export default function Workbench() {
 
 	return (
 		<div className="flex flex-col gap-4 w-full">
-			<BannerCard />
 			{/* 顶部四个统计卡片 */}
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 				{quickStats.map((stat) => (
@@ -203,7 +201,7 @@ export default function Workbench() {
 			</div>
 
 			{/* 项目概览区块 */}
-			<div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+			<div className="grid grid-cols-1 lg:grid-cols-3 gap-4 hidden">
 				<Card className="lg:col-span-2 flex flex-col gap-4 p-6">
 					<Text variant="body2" className="font-semibold mb-2">
 						Project overview
@@ -260,7 +258,7 @@ export default function Workbench() {
 			</div>
 
 			{/* 交易+收入区块 */}
-			<div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+			<div className="grid grid-cols-1 lg:grid-cols-3 gap-4 hidden">
 				<Card className="lg:col-span-2 flex flex-col p-6">
 					<div className="flex items-center gap-4 mb-4">
 						<Text variant="body2" className="font-semibold">
