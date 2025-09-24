@@ -1,6 +1,6 @@
 export const PERSON_SECURITY_LEVELS = [
 	{ value: "NON_SECRET", label: "非密" },
-	{ value: "GENERAL", label: "普通" },
+	{ value: "GENERAL", label: "一般" },
 	{ value: "IMPORTANT", label: "重要" },
 	{ value: "CORE", label: "核心" },
 ];
