@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import type { KeycloakUser, PaginationParams, UserProfileConfig, UserTableRow } from "#/keycloak";
 import { KeycloakUserProfileService, KeycloakUserService } from "@/api/services/keycloakService";
 import type { CustomUserAttributeKey } from "@/constants/user";
-import { CUSTOM_USER_ATTRIBUTE_KEYS } from "@/constants/user";
 import { Icon } from "@/components/icon";
 import { PERSON_SECURITY_LEVELS } from "@/constants/governance";
 import { usePathname, useRouter } from "@/routes/hooks";
@@ -30,16 +29,6 @@ const RESERVED_PROFILE_ATTRIBUTE_NAMES = new Set([
 	"personnel_security_level",
 	"person_level",
 	"data_levels",
-]);
-
-const RESERVED_PROFILE_ATTRIBUTES = new Set<string>([
-	"username",
-	"email",
-	"firstName",
-	"lastName",
-	"locale",
-	"fullname",
-	...CUSTOM_USER_ATTRIBUTE_KEYS,
 ]);
 
 const getSingleAttributeValue = (attributes: Record<string, string[]> | undefined, key: CustomUserAttributeKey) => {
@@ -172,11 +161,6 @@ export default function UserPage() {
 			),
 		},
 		{
-			title: "人员密级",
-			dataIndex: ["attributes", "personnel_security_level"],
-			width: 140,
-			render: (_: string[] | undefined, record) => {
-				const value = getSingleAttributeValue(record.attributes, "personnel_security_level");
 			title: "姓名",
 			dataIndex: "firstName",
 			width: 160,
@@ -190,9 +174,8 @@ export default function UserPage() {
 			dataIndex: ["attributes", "department"],
 			width: 180,
 			render: (_: string[] | undefined, record) => {
-				const value = getSingleAttributeValue(record.attributes, "department");
-				const department = record.attributes?.department?.[0]?.trim();
-				return department && department.length > 0 ? department : "-";
+				const department = getSingleAttributeValue(record.attributes, "department").trim();
+				return department.length > 0 ? department : "-";
 			},
 		},
 		{
@@ -200,10 +183,8 @@ export default function UserPage() {
 			dataIndex: ["attributes", "position"],
 			width: 180,
 			render: (_: string[] | undefined, record) => {
-				const value = getSingleAttributeValue(record.attributes, "position");
-				return value || "-";
-				const position = record.attributes?.position?.[0]?.trim();
-				return position && position.length > 0 ? position : "-";
+				const position = getSingleAttributeValue(record.attributes, "position").trim();
+				return position.length > 0 ? position : "-";
 			},
 		},
 		{
@@ -211,8 +192,9 @@ export default function UserPage() {
 			dataIndex: ["attributes", "personnel_security_level"],
 			width: 150,
 			render: (_: string[] | undefined, record) => {
-				const levelValue =
-					record.attributes?.personnel_security_level?.[0] || record.attributes?.person_security_level?.[0];
+				const primaryLevel = getSingleAttributeValue(record.attributes, "personnel_security_level").trim();
+				const legacyLevel = record.attributes?.person_security_level?.[0]?.trim();
+				const levelValue = primaryLevel || legacyLevel || "";
 				if (!levelValue) return "-";
 				const label = personLevelLabelMap.get(levelValue) ?? levelValue;
 				return label !== levelValue ? `${label}（${levelValue}）` : label;
