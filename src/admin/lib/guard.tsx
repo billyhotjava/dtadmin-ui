@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { adminApi } from "@/admin/api/adminApi";
 import { AdminSessionContext } from "@/admin/lib/session-context";
 import ForbiddenView from "@/admin/views/forbidden";
-import type { AdminRole } from "@/admin/types";
+import { normalizeAdminRole } from "@/admin/types";
 import { useRouter } from "@/routes/hooks";
 import { useSignOut } from "@/store/userStore";
 import { LineLoading } from "@/components/loading";
@@ -35,15 +35,18 @@ export default function AdminGuard({ children }: Props) {
 
 	useEffect(() => {
 		if (isLoading) return;
-		if (isError || !data?.allowed || !data.role) {
+		const normalizedRole = normalizeAdminRole(data?.role);
+		if (isError || !data?.allowed || !normalizedRole) {
 			handleForbidden();
 		}
 	}, [data, handleForbidden, isError, isLoading]);
 
 	const session = useMemo(() => {
-		if (!data?.allowed || !data.role) return null;
+		if (!data?.allowed) return null;
+		const normalizedRole = normalizeAdminRole(data.role);
+		if (!normalizedRole) return null;
 		return {
-			role: data.role as AdminRole,
+			role: normalizedRole,
 			username: data.username,
 			email: data.email,
 		};
