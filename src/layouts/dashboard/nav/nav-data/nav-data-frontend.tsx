@@ -25,6 +25,11 @@ export const frontendNavData: NavProps["data"] = [
 				icon: <Icon icon="local:ic-management" size="24" />,
 				children: [
 					{
+						title: "sys.nav.usermgmt.system.user",
+						path: "/management/system/user",
+						auth: SYSADMIN_ROLES,
+					},
+					{
 						title: "sys.nav.usermgmt.system.permission",
 						path: "/management/system/permission",
 						auth: SYSADMIN_ROLES,
@@ -40,11 +45,6 @@ export const frontendNavData: NavProps["data"] = [
 						auth: SYSADMIN_ROLES,
 					},
 					{
-						title: "sys.nav.usermgmt.system.user",
-						path: "/management/system/user",
-						auth: SYSADMIN_ROLES,
-					},
-					{
 						title: "sys.nav.usermgmt.system.approval",
 						path: "/management/system/approval",
 						auth: AUTHADMIN_ROLES,
@@ -53,21 +53,6 @@ export const frontendNavData: NavProps["data"] = [
 						title: "sys.nav.usermgmt.system.audit_log",
 						path: "/management/system/audit-log",
 						auth: AUDITADMIN_ROLES,
-					},
-				],
-			},
-		],
-	},
-	{
-		items: [
-			{
-				title: "sys.nav.dataSecurity",
-				path: "/security",
-				icon: <Icon icon="solar:shield-keyhole-bold" size="24" />,
-				children: [
-					{
-						title: "sys.nav.dataSecurityOverview",
-						path: "/security/assets",
 					},
 				],
 			},

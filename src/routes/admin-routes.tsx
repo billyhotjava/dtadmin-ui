@@ -9,6 +9,17 @@ import PortalMenusView from "@/admin/views/portal-menus";
 import OrgManagementView from "@/admin/views/org-management";
 import UserManagementView from "@/admin/views/user-management";
 import RoleManagementView from "@/admin/views/role-management";
+import { getMenusByRole } from "@/admin/config/menus";
+import { useAdminSession } from "@/admin/lib/session-context";
+
+function AdminIndexRedirect() {
+	const session = useAdminSession();
+	const menus = getMenusByRole(session.role);
+	if (!menus.length) {
+		return <Navigate to="/403" replace />;
+	}
+	return <Navigate to={menus[0].path} replace />;
+}
 
 export const adminRoutes: RouteObject[] = [
 	{
@@ -19,7 +30,7 @@ export const adminRoutes: RouteObject[] = [
 			</AdminGuard>
 		),
 		children: [
-			{ index: true, element: <Navigate to="orgs" replace /> },
+			{ index: true, element: <AdminIndexRedirect /> },
 			{ path: "orgs", element: <OrgManagementView /> },
 			{ path: "users", element: <UserManagementView /> },
 			{ path: "roles", element: <RoleManagementView /> },

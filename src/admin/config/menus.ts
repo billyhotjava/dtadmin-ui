@@ -17,14 +17,10 @@ const sysadminMenus: AdminMenuItem[] = [
 ];
 
 const authadminMenus: AdminMenuItem[] = [
-	{ key: "approval", label: "审批中心", path: "approval", icon: "solar:verify-outline" },
-	{ key: "rules", label: "审批规则", path: "approval?tab=rules", icon: "solar:book-outline" },
+	{ key: "tasks", label: "任务审批", path: "approval", icon: "solar:verify-outline" },
 ];
 
-const auditMenus: AdminMenuItem[] = [
-	{ key: "audit", label: "审计日志", path: "audit", icon: "solar:history-bold" },
-	{ key: "login", label: "登录/登出日志", path: "audit?tab=login", icon: "solar:door-open-bold" },
-];
+const auditMenus: AdminMenuItem[] = [{ key: "audit", label: "日志记录", path: "audit", icon: "solar:history-bold" }];
 
 export function getMenusByRole(role: AdminRole): AdminMenuItem[] {
 	switch (role) {
