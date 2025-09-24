@@ -120,6 +120,15 @@ export const DB_MENU: Menu[] = [
 		path: "/management/system/approval",
 		component: "/pages/management/system/approval",
 	},
+	{
+		id: "management_system_my_changes",
+		parentId: "management_system",
+		name: "sys.nav.system.my_changes",
+		code: "management:system:my_changes",
+		type: MENU,
+		path: "/management/system/my-changes",
+		component: "/pages/management/system/my-changes",
+	},
 	// 添加审计日志菜单项
 	{
 		id: "management_system_audit_log",
