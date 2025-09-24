@@ -14,7 +14,7 @@ const ADMIN_ACCOUNTS = [
 		username: "sysadmin",
 		email: "sysadmin@example.com",
 		role: "SYSADMIN" as const,
-		displayName: "系统管理员",
+		fullName: "系统管理员",
 		permissions: ["user.create", "user.update", "org.manage", "config.manage"],
 	},
 	{
@@ -22,7 +22,7 @@ const ADMIN_ACCOUNTS = [
 		username: "authadmin",
 		email: "authadmin@example.com",
 		role: "AUTHADMIN" as const,
-		displayName: "授权管理员",
+		fullName: "授权管理员",
 		permissions: ["approval.review", "approval.assign"],
 	},
 	{
@@ -30,7 +30,7 @@ const ADMIN_ACCOUNTS = [
 		username: "auditadmin",
 		email: "auditadmin@example.com",
 		role: "AUDITADMIN" as const,
-		displayName: "安全审计员",
+		fullName: "安全审计员",
 		permissions: ["audit.read", "audit.export"],
 	},
 ];
@@ -66,7 +66,8 @@ const signIn = http.post(`/api${UserApi.SignIn}`, async ({ request }) => {
 				id: account.id,
 				email: account.email,
 				username: account.username,
-				firstName: account.displayName,
+				firstName: account.fullName,
+				fullName: account.fullName,
 				avatar: `https://avatars.dicebear.com/api/initials/${account.username}.svg`,
 				enabled: true,
 				roles: [account.role],

@@ -142,7 +142,7 @@
 			"user": {
 				"account": "Account",
 				"index": "User",
-				"profile": "Profile"
+				"profile": "Personal Details"
 			},
 			"workbench": "Workbench",
 			"dataSecurity": "Data Security",

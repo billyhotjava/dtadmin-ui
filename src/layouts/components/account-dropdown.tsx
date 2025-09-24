@@ -17,7 +17,7 @@ import {
  */
 export default function AccountDropdown() {
 	const { replace } = useRouter();
-	const { username, email, avatar } = useUserInfo();
+	const { username, email, avatar, fullName } = useUserInfo();
 	const signOut = useSignOut();
 	const { backToLogin } = useLoginStateContext();
 	const { t } = useTranslation();
@@ -44,16 +44,14 @@ export default function AccountDropdown() {
 				<div className="flex items-center gap-2 p-2">
 					<img className="h-10 w-10 rounded-full" src={avatar} alt="" />
 					<div className="flex flex-col items-start">
-						<div className="text-text-primary text-sm font-medium">{username}</div>
-						<div className="text-text-secondary text-xs">{email}</div>
+						<div className="text-text-primary text-sm font-medium">{fullName || username}</div>
+						<div className="text-text-secondary text-xs">
+							{email}
+							{username ? `（${username}）` : null}
+						</div>
 					</div>
 				</div>
 				<DropdownMenuSeparator />
-				<DropdownMenuItem asChild>
-					<NavLink to="https://docs-admin.slashspaces.com/" target="_blank">
-						{t("sys.docs")}
-					</NavLink>
-				</DropdownMenuItem>
 				<DropdownMenuItem asChild>
 					<NavLink to="/management/user/profile">{t("sys.nav.user.profile")}</NavLink>
 				</DropdownMenuItem>

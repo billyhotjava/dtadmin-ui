@@ -23,7 +23,43 @@ interface FilterState {
 	ip?: string;
 }
 
+const OPERATOR_LABEL_MAP: Record<string, string> = {
+	sysadmin: "系统管理员",
+	authadmin: "授权管理员",
+	auditadmin: "安全审计员",
+};
+
 const auditLogSamples: AuditLogEntry[] = [
+	{
+		id: "L-202405-021",
+		timestamp: "2024-05-14T08:35:00+08:00",
+		module: "安全审计",
+		action: "巡检完成 日志留存验证",
+		operator: "auditadmin",
+		ip: "10.10.7.6",
+		result: "成功",
+		detail: "完成凌晨巡检并确认日志留存完整可追溯。",
+	},
+	{
+		id: "L-202405-022",
+		timestamp: "2024-05-14T08:55:00+08:00",
+		module: "安全审计",
+		action: "触发风险告警复核",
+		operator: "auditadmin",
+		ip: "10.10.7.6",
+		result: "成功",
+		detail: "复核 AI 风控规则命中的异常登录告警，判定为误报。",
+	},
+	{
+		id: "L-202405-023",
+		timestamp: "2024-05-14T09:20:00+08:00",
+		module: "安全审计",
+		action: "导出审计报表",
+		operator: "auditadmin",
+		ip: "10.10.7.8",
+		result: "成功",
+		detail: "生成近 24 小时关键操作审计报表并发送至安全负责人。",
+	},
 	{
 		id: "L-202405-001",
 		timestamp: "2024-05-12T09:05:00+08:00",
@@ -370,7 +406,7 @@ export default function AuditCenterView() {
 											<div className="text-xs text-muted-foreground">{log.detail}</div>
 										</td>
 										<td className="px-4 py-3 text-xs text-muted-foreground">
-											<div>操作者：{log.operator}</div>
+											<div>操作者：{formatOperatorName(log.operator)}</div>
 											<div>IP：{log.ip}</div>
 										</td>
 										<td className="px-4 py-3">
@@ -393,4 +429,12 @@ function formatDateTime(value: string) {
 		return value;
 	}
 	return date.toLocaleString("zh-CN", { hour12: false });
+}
+
+function formatOperatorName(value: string) {
+	const label = OPERATOR_LABEL_MAP[value as keyof typeof OPERATOR_LABEL_MAP];
+	if (label) {
+		return `${label}（${value}）`;
+	}
+	return value;
 }
