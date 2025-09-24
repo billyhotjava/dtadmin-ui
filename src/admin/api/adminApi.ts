@@ -1,15 +1,16 @@
-import apiClient from "@/api/apiClient";
 import type {
+	AdminRoleDetail,
+	AdminUser,
 	AdminWhoami,
 	AuditEvent,
-	PortalMenuItem,
-	SystemConfigItem,
 	ChangeRequest,
 	OrganizationNode,
-	AdminUser,
-	AdminRoleDetail,
+	OrganizationPayload,
 	PermissionCatalogSection,
+	PortalMenuItem,
+	SystemConfigItem,
 } from "@/admin/types";
+import apiClient from "@/api/apiClient";
 
 export interface ChangeRequestQuery {
 	status?: string;
@@ -98,6 +99,23 @@ export const adminApi = {
 	getOrganizations: () =>
 		apiClient.get<OrganizationNode[]>({
 			url: "/admin/orgs",
+		}),
+
+	createOrganization: (payload: OrganizationPayload) =>
+		apiClient.post<OrganizationNode>({
+			url: "/admin/orgs",
+			data: payload,
+		}),
+
+	updateOrganization: (id: number, payload: OrganizationPayload) =>
+		apiClient.put<OrganizationNode>({
+			url: `/admin/orgs/${id}`,
+			data: payload,
+		}),
+
+	deleteOrganization: (id: number) =>
+		apiClient.delete<void>({
+			url: `/admin/orgs/${id}`,
 		}),
 
 	getAdminUsers: () =>
