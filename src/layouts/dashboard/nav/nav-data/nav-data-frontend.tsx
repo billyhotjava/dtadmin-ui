@@ -1,6 +1,10 @@
 import { Icon } from "@/components/icon";
 import type { NavProps } from "@/components/nav";
 
+const SYSADMIN_ROLES = ["ROLE_SYS_ADMIN", "SYSADMIN"];
+const AUTHADMIN_ROLES = ["ROLE_AUTH_ADMIN", "AUTHADMIN"];
+const AUDITADMIN_ROLES = ["ROLE_AUDITOR_ADMIN", "AUDITADMIN"];
+
 export const frontendNavData: NavProps["data"] = [
 	{
 		//name: "sys.nav.dashboard",
@@ -23,27 +27,47 @@ export const frontendNavData: NavProps["data"] = [
 					{
 						title: "sys.nav.usermgmt.system.permission",
 						path: "/management/system/permission",
-						auth: ["NOUSE"], // 只有ROLE_SYS_ADMIN角色可以访问
+						auth: SYSADMIN_ROLES,
 					},
 					{
 						title: "sys.nav.usermgmt.system.role",
 						path: "/management/system/role",
-						auth: ["NOUSE"], // 只有ROLE_SYS_ADMIN角色可以访问
+						auth: SYSADMIN_ROLES,
+					},
+					{
+						title: "sys.nav.usermgmt.system.group",
+						path: "/management/system/group",
+						auth: SYSADMIN_ROLES,
 					},
 					{
 						title: "sys.nav.usermgmt.system.user",
 						path: "/management/system/user",
-						auth: ["ROLE_SYS_ADMIN"], // 只有ROLE_SYS_ADMIN角色可以访问
+						auth: SYSADMIN_ROLES,
 					},
 					{
 						title: "sys.nav.usermgmt.system.approval",
 						path: "/management/system/approval",
-						auth: ["ROLE_AUTH_ADMIN"], // 只有ROLE_AUTH_ADMIN角色可以访问
+						auth: AUTHADMIN_ROLES,
 					},
 					{
 						title: "sys.nav.usermgmt.system.audit_log",
-						path: "/management/system/auditlog",
-						auth: ["ROLE_AUDITOR_ADMIN"], // 只有ROLE_AUDITOR_ADMIN角色可以访问
+						path: "/management/system/audit-log",
+						auth: AUDITADMIN_ROLES,
+					},
+				],
+			},
+		],
+	},
+	{
+		items: [
+			{
+				title: "sys.nav.dataSecurity",
+				path: "/security",
+				icon: <Icon icon="solar:shield-keyhole-bold" size="24" />,
+				children: [
+					{
+						title: "sys.nav.dataSecurityOverview",
+						path: "/security/assets",
 					},
 				],
 			},

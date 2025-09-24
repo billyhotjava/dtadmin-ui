@@ -3,11 +3,11 @@ import { rgbAlpha } from "@/utils/theme";
 
 export const presetsColors = {
 	[ThemeColorPresets.Default]: {
-		lighter: "#C8FAD6",
-		light: "#5BE49B",
-		default: "#00A76F",
-		dark: "#007867",
-		darker: "#004B50",
+		lighter: "#D6E4FF",
+		light: "#89A1FF",
+		default: "#2740A1",
+		dark: "#1C2F7F",
+		darker: "#131F5A",
 	},
 	[ThemeColorPresets.Cyan]: {
 		lighter: "#CCF4FE",

@@ -12,6 +12,13 @@ import { Input } from "@/ui/input";
 import GroupMembersModal from "./group-members-modal";
 import GroupModal from "./group-modal";
 
+const ORG_TYPE_LABELS: Record<string, string> = {
+	COMPANY: "公司",
+	DEPARTMENT: "部门",
+	TEAM: "团队",
+	PROJECT: "项目",
+};
+
 export default function GroupPage() {
 	const [groups, setGroups] = useState<GroupTableRow[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -57,11 +64,17 @@ export default function GroupPage() {
 				}),
 			);
 
+			const normalizedSearch = searchValue.toLowerCase();
 			const filteredData = groupsWithMemberCount.filter((group) => {
-				if (!searchValue) return true;
+				if (!normalizedSearch) return true;
+				const orgCode = group.attributes?.orgCode?.[0] || "";
+				const orgTypeKey = group.attributes?.orgType?.[0] || "";
+				const orgTypeLabel = ORG_TYPE_LABELS[orgTypeKey] || orgTypeKey;
 				return (
-					group.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-					(group.path || "").toLowerCase().includes(searchValue.toLowerCase())
+					group.name.toLowerCase().includes(normalizedSearch) ||
+					(group.path || "").toLowerCase().includes(normalizedSearch) ||
+					orgCode.toLowerCase().includes(normalizedSearch) ||
+					orgTypeLabel.toLowerCase().includes(normalizedSearch)
 				);
 			});
 
@@ -125,6 +138,22 @@ export default function GroupPage() {
 			align: "center",
 			width: 100,
 			render: (count: number) => <Badge variant="secondary">{count} 人</Badge>,
+		},
+		{
+			title: "组织编码",
+			dataIndex: "orgCode",
+			width: 160,
+			render: (_: unknown, record) => record.attributes?.orgCode?.[0] || "-",
+		},
+		{
+			title: "组织类型",
+			dataIndex: "orgType",
+			width: 120,
+			render: (_: unknown, record) => {
+				const typeKey = record.attributes?.orgType?.[0] || "";
+				if (!typeKey) return "-";
+				return ORG_TYPE_LABELS[typeKey] || typeKey;
+			},
 		},
 		{
 			title: "子组数量",

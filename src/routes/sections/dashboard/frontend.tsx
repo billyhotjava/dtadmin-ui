@@ -31,6 +31,13 @@ export function getFrontendDashboardRoutes(): RouteObject[] {
 				},
 			],
 		},
+		{
+			path: "security",
+			children: [
+				{ index: true, element: <Navigate to="assets" replace /> },
+				{ path: "assets", element: Component("/pages/security/data-security") },
+			],
+		},
 	];
 	return frontendDashboardRoutes;
 }

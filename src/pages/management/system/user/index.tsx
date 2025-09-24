@@ -12,11 +12,16 @@ import { Card, CardContent, CardHeader } from "@/ui/card";
 import { Input } from "@/ui/input";
 import ResetPasswordModal from "./reset-password-modal";
 import UserModal from "./user-modal";
-import { t } from "@/locales/i18n";
+import { useBilingualText } from "@/hooks/useBilingualText";
 
 export default function UserPage() {
 	const { push } = useRouter();
 	const pathname = usePathname();
+	const bilingual = useBilingualText();
+	const translate = (key: string, fallback: string) => {
+		const value = bilingual(key).trim();
+		return value.length > 0 ? value : fallback;
+	};
 
 	const [users, setUsers] = useState<UserTableRow[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -135,7 +140,7 @@ export default function UserPage() {
 		...(userProfileConfig?.attributes
 			?.filter((attr) => !["username", "email", "firstName", "lastName", "locale"].includes(attr.name))
 			.map((attr) => ({
-				title: t(attr.displayName.replace(/\$\{([^}]*)\}/g, "$1")) || attr.name,
+			title: translate(attr.displayName.replace(/\$\{([^}]*)\}/g, "$1"), attr.name),
 				dataIndex: ["attributes", attr.name],
 				width: 150,
 				render: (value: string[] | undefined) => {

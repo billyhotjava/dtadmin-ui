@@ -25,12 +25,8 @@
 		},
 		"docs": "Document",
 		"login": {
-<<<<<<< HEAD
-			"brandTitle": "Data Platform Manager",
-=======
 			"brandName": "Data Platform Manager",
 			"brandIllustrationAlt": "Futuristic data platform illustration",
->>>>>>> origin/1.0.0
 			"accountPlaceholder": "Please input username",
 			"backSignIn": "Back sign in",
 			"confirmPassword": "Confirm Password",
@@ -66,7 +62,7 @@
 			"signInFormTitle": "Login to your account",
 			"signInPrimaryTitle": "Hi, Welcome Back",
 			"signInSecondTitle": "Backstage management system",
-			"signInTitle": "",
+			"signInTitle": "Account Sign In",
 			"signUpFormTitle": "Sign up",
 			"smsCode": "SMS code",
 			"smsPlaceholder": "Please input sms code",
@@ -132,6 +128,7 @@
 				"system": {
 					"index": "System Management",
 					"user": "User Management",
+					"group": "Organization Management",
 					"role": "Role Management",
 					"permission": "Permission Management",
 					"approval": "Approval Management",
@@ -146,7 +143,150 @@
 				"index": "User",
 				"profile": "Profile"
 			},
-			"workbench": "Workbench"
+			"workbench": "Workbench",
+			"dataSecurity": "Data Security",
+			"dataSecurityOverview": "Asset Overview",
+			"system": {
+				"group": "Organization",
+				"index": "System Management"
+			}
+		},
+		"workbench": {
+			"title": "Cluster Overview",
+			"uptime": "Uptime",
+			"nodes": "Active Nodes",
+			"jobs": "Running Jobs",
+			"statusHealthy": "Healthy",
+			"statusWarning": "Attention Needed",
+			"cpuLoad": "CPU Load",
+			"memoryLoad": "Memory Usage",
+			"storageLoad": "Storage Usage",
+			"timelineLabel": "Last hour timeline",
+			"nodeTableTitle": "Node Overview",
+			"nodeTableSubtitle": "Latest sampled nodes",
+			"nodeName": "Node",
+			"nodeRole": "Role",
+			"nodeCpu": "CPU Usage",
+			"nodeMemory": "Memory Usage",
+			"nodeStatus": "Status",
+			"roleMaster": "Master",
+			"roleWorker": "Worker"
+		},
+		"admin": {
+			"tab": {
+				"user": "User Change",
+				"role": "Role Change",
+				"org": "Organization",
+				"config": "System Config",
+				"menu": "Menu Management"
+			},
+			"action": {
+				"CREATE": "Create",
+				"UPDATE": "Update",
+				"DELETE": "Delete",
+				"BIND_ROLE": "Bind Role",
+				"UNBIND_ROLE": "Unbind Role",
+				"CONFIG_SET": "Configure",
+				"USER_CREATE": "Create User",
+				"ROLE_ASSIGN": "Assign Role",
+				"DATA_EXPORT": "Export Data",
+				"LOGIN": "Login",
+				"UNKNOWN": "Unknown Action"
+			},
+			"status": {
+				"PENDING": "Pending",
+				"APPROVED": "Approved",
+				"REJECTED": "Rejected",
+				"FAILED": "Failed",
+				"DRAFT": "Draft",
+				"UNKNOWN": "Unknown Status",
+				"ACTIVE": "Active",
+				"DISABLED": "Disabled"
+			},
+			"resource": {
+				"USER": "User",
+				"ROLE": "Role",
+				"ORG": "Organization",
+				"CONFIG": "System Config",
+				"MENU": "Menu",
+				"PORTAL_MENU": "Portal Menu",
+				"UNKNOWN": "Unknown Resource"
+			},
+			"outcome": {
+				"SUCCESS": "Success",
+				"FAILURE": "Failure"
+			},
+			"role": {
+				"SYSADMIN": "System Administrator",
+				"AUTHADMIN": "Authorization Administrator",
+				"AUDITADMIN": "Audit Administrator",
+				"DATA_STEWARD": "Data Steward",
+				"DATA_ANALYST": "Data Analyst"
+			},
+			"sensitivity": {
+				"TOP_SECRET": "Top Secret",
+				"SECRET": "Secret",
+				"NORMAL": "Normal",
+				"UNKNOWN": "Unknown Sensitivity"
+			}
+		},
+		"dataSecurity": {
+			"title": "Data Security Overview",
+			"subtitle": "Track data assets by sensitivity level",
+			"distributionTitle": "Asset Distribution",
+			"listTitle": "Data Asset List",
+			"listSubtitle": "Sorted by latest synchronization",
+			"assetName": "Asset Name",
+			"assetOwner": "Owner",
+			"assetCategory": "Category",
+			"assetRecords": "Records",
+			"assetUpdatedAt": "Updated At",
+			"category": {
+				"public": "Public",
+				"internal": "Internal",
+				"confidential": "Confidential",
+				"secret": "Secret"
+			}
+		},
+		"permission": {
+			"title": "Permission Catalogue",
+			"new": "New Permission",
+			"dashboard": "Workbench",
+			"dataSecurity": "Data Security",
+			"user": "Account Center",
+			"group": "Organization Center",
+			"permission": "Permission Dictionary",
+			"columns": {
+				"name": "Permission Name",
+				"type": "Type",
+				"icon": "Icon",
+				"component": "Component",
+				"status": "Status",
+				"order": "Order",
+				"action": "Action"
+			},
+			"status": {
+				"enable": "Enabled",
+				"disable": "Disabled"
+			},
+			"type": {
+				"catalogue": "Catalogue",
+				"menu": "Menu",
+				"component": "Component"
+			},
+			"action": {
+				"addChild": "Add Child",
+				"edit": "Edit",
+				"delete": "Delete"
+			},
+			"modal": {
+				"create": "New Permission",
+				"edit": "Edit Permission"
+			}
+		},
+		"profile": {
+			"title": "Job Title",
+			"department": "Department"
 		},
 		"settings": {
 			"accordion": "Accordion Menu",

@@ -18,7 +18,7 @@ type Language = {
 export const LANGUAGE_MAP: Record<Locale, Language> = {
 	[LocalEnum.zh_CN]: {
 		locale: LocalEnum.zh_CN,
-		label: "Chinese",
+		label: "简体中文",
 		icon: "flag-cn",
 		antdLocal: zh_CN,
 	},
@@ -33,7 +33,7 @@ export const LANGUAGE_MAP: Record<Locale, Language> = {
 export default function useLocale() {
 	const { t, i18n } = useTranslation();
 
-	const locale = (i18n.resolvedLanguage || LocalEnum.en_US) as Locale;
+	const locale = (i18n.resolvedLanguage || LocalEnum.zh_CN) as Locale;
 	const language = LANGUAGE_MAP[locale];
 
 	/**
