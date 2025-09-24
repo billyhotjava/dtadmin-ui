@@ -99,7 +99,7 @@
 					"user": "用户管理",
 					"group": "组织机构管理",
 					"role": "角色管理",
-					"permission": "权限管理",
+					"permission": "菜单管理",
 					"approval": "审批管理",
 					"audit_log": "日志审计"
 				}

@@ -130,7 +130,7 @@
 					"user": "User Management",
 					"group": "Organization Management",
 					"role": "Role Management",
-					"permission": "Permission Management",
+					"permission": "Menu Management",
 					"approval": "Approval Management",
 					"audit_log": "Audit Log"
 				}
