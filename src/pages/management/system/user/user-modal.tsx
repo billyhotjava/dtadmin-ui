@@ -22,6 +22,21 @@ import {
 } from "@/constants/governance";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/select";
 
+const RESERVED_PROFILE_ATTRIBUTE_NAMES = [
+	"username",
+	"email",
+	"firstName",
+	"lastName",
+	"fullName",
+	"locale",
+	"department",
+	"position",
+	"person_security_level",
+	"personnel_security_level",
+	"person_level",
+	"data_levels",
+];
+
 interface UserModalProps {
 	open: boolean;
 	mode: "create" | "edit";
@@ -32,9 +47,8 @@ interface UserModalProps {
 
 interface FormData {
 	username: string;
+	fullName: string;
 	email: string;
-	firstName: string;
-	lastName: string;
 	enabled: boolean;
 	emailVerified: boolean;
 	attributes: Record<string, string[]>;
@@ -54,9 +68,8 @@ interface FormState {
 export default function UserModal({ open, mode, user, onCancel, onSuccess }: UserModalProps) {
 	const [formData, setFormData] = useState<FormData>({
 		username: "",
+		fullName: "",
 		email: "",
-		firstName: "",
-		lastName: "",
 		enabled: true,
 		emailVerified: false,
 		attributes: {},
@@ -65,9 +78,8 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 	const [formState, setFormState] = useState<FormState>({
 		originalData: {
 			username: "",
+			fullName: "",
 			email: "",
-			firstName: "",
-			lastName: "",
 			enabled: true,
 			emailVerified: false,
 			attributes: {},
@@ -99,6 +111,7 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 
 			const candidateLevel = (
 				level ||
+				cloned.personnel_security_level?.[0] ||
 				cloned.person_security_level?.[0] ||
 				cloned.person_level?.[0] ||
 				""
@@ -108,15 +121,32 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 				: undefined;
 
 			if (resolvedLevel) {
+				const derived = deriveDataLevels(resolvedLevel);
+				cloned.personnel_security_level = [resolvedLevel];
 				cloned.person_security_level = [resolvedLevel];
 				cloned.person_level = [resolvedLevel];
-				const derived = deriveDataLevels(resolvedLevel);
 				cloned.data_levels = [...derived];
 			} else {
+				delete cloned.personnel_security_level;
 				delete cloned.person_security_level;
 				delete cloned.person_level;
 				delete cloned.data_levels;
 			}
+
+			Object.keys(cloned).forEach((key) => {
+				const value = cloned[key];
+				if (Array.isArray(value)) {
+					const sanitized = value
+						.map((item) => (typeof item === "string" ? item.trim() : item))
+						.filter((item): item is string => typeof item === "string" && item.length > 0);
+
+					if (sanitized.length > 0) {
+						cloned[key] = sanitized;
+					} else {
+						delete cloned[key];
+					}
+				}
+			});
 
 			return cloned;
 		},
@@ -128,6 +158,22 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 	}, [formData.attributes, normalizeAttributesForState, personLevel]);
 
 	const derivedDataLevels = useMemo(() => deriveDataLevels(personLevel), [personLevel]);
+
+	const updateSingleValueAttribute = (key: string, value: string) => {
+		setFormData((prev) => {
+			const nextAttributes = { ...prev.attributes };
+			if (value.trim()) {
+				nextAttributes[key] = [value];
+			} else {
+				delete nextAttributes[key];
+			}
+
+			return {
+				...prev,
+				attributes: nextAttributes,
+			};
+		});
+	};
 
 	// 加载UserProfile配置
 	const loadUserProfileConfig = useCallback(async () => {
@@ -171,6 +217,7 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 	useEffect(() => {
 		if (mode === "edit" && user) {
 			const candidateLevel = (
+				user.attributes?.personnel_security_level?.[0] ||
 				user.attributes?.person_security_level?.[0] ||
 				user.attributes?.person_level?.[0] ||
 				"NON_SECRET"
@@ -182,9 +229,8 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 
 			const initialFormData: FormData = {
 				username: user.username || "",
+				fullName: user.firstName || user.lastName || "",
 				email: user.email || "",
-				firstName: user.firstName || "",
-				lastName: user.lastName || "",
 				enabled: user.enabled ?? true,
 				emailVerified: user.emailVerified ?? false,
 				attributes: normalizedAttributes,
@@ -212,9 +258,8 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 			setPersonLevel(defaultLevel);
 			setFormData({
 				username: "",
+				fullName: "",
 				email: "",
-				firstName: "",
-				lastName: "",
 				enabled: true,
 				emailVerified: false,
 				attributes: baseAttributes,
@@ -222,9 +267,8 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 			setFormState({
 				originalData: {
 					username: "",
+					fullName: "",
 					email: "",
-					firstName: "",
-					lastName: "",
 					enabled: true,
 					emailVerified: false,
 					attributes: baseAttributes,
@@ -247,13 +291,17 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 	}, [open, loadRoles, loadUserProfileConfig]);
 
 	const handleSubmit = async () => {
-		if (!formData.username.trim()) {
+		const username = formData.username.trim();
+		const fullName = formData.fullName.trim();
+		const email = formData.email.trim();
+
+		if (!username) {
 			setError("用户名不能为空");
 			return;
 		}
 
-		if (!formData.email.trim()) {
-			setError("邮箱不能为空");
+		if (!fullName) {
+			setError("姓名不能为空");
 			return;
 		}
 
@@ -261,7 +309,9 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 		if (userProfileConfig?.attributes) {
 			for (const attribute of userProfileConfig.attributes) {
 				// 跳过基础字段，因为它们已经在上面检查过了
-				if (["username", "email", "firstName", "lastName"].includes(attribute.name)) {
+				if (
+					["username", "email", "firstName", "lastName", "fullName", "department", "position"].includes(attribute.name)
+				) {
 					continue;
 				}
 
@@ -299,14 +349,16 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 		try {
 			if (mode === "create") {
 				const createData: CreateUserRequest = {
-					username: formData.username,
-					email: formData.email,
-					firstName: formData.firstName,
-					lastName: formData.lastName,
+					username,
+					firstName: fullName,
 					enabled: formData.enabled,
 					emailVerified: formData.emailVerified,
 					attributes: attributesPayload,
 				};
+
+				if (email) {
+					createData.email = email;
+				}
 
 				const response = await KeycloakUserService.createUser(createData);
 				if (response.userId) {
@@ -323,10 +375,9 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 				if (hasUserInfoChanges) {
 					const updateData: UpdateUserRequest = {
 						id: user.id,
-						username: formData.username,
-						email: formData.email,
-						firstName: formData.firstName,
-						lastName: formData.lastName,
+						username,
+						email,
+						firstName: fullName,
 						enabled: formData.enabled,
 						emailVerified: formData.emailVerified,
 						attributes: attributesPayload,
@@ -384,8 +435,7 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 		return (
 			formData.username !== originalData.username ||
 			formData.email !== originalData.email ||
-			formData.firstName !== originalData.firstName ||
-			formData.lastName !== originalData.lastName ||
+			formData.fullName !== originalData.fullName ||
 			formData.enabled !== originalData.enabled ||
 			formData.emailVerified !== originalData.emailVerified ||
 			JSON.stringify(normalizedAttributes) !== JSON.stringify(originalData.attributes || {})
@@ -442,6 +492,9 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 		}
 	};
 
+	const departmentValue = formData.attributes.department?.[0] ?? "";
+	const positionValue = formData.attributes.position?.[0] ?? "";
+
 	const title = mode === "create" ? "创建用户" : "编辑用户";
 
 	return (
@@ -473,36 +526,44 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 										onChange={(e) => setFormData((prev) => ({ ...prev, username: e.target.value }))}
 										placeholder="请输入用户名"
 									/>
+									<p className="text-xs text-muted-foreground">用户名即登录名，需要保持唯一。</p>
 								</div>
 								<div className="space-y-2">
-									<Label htmlFor="email">邮箱 *</Label>
+									<Label htmlFor="fullName">姓名 *</Label>
+									<Input
+										id="fullName"
+										value={formData.fullName}
+										onChange={(e) => setFormData((prev) => ({ ...prev, fullName: e.target.value }))}
+										placeholder="请输入姓名"
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="email">邮箱</Label>
 									<Input
 										id="email"
 										type="email"
 										value={formData.email}
 										onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
-										placeholder="请输入邮箱"
+										placeholder="请输入邮箱（可选）"
 									/>
+									<p className="text-xs text-muted-foreground">邮箱用于接收通知，可选填写。</p>
 								</div>
-							</div>
-
-							<div className="grid grid-cols-2 gap-4 hidden">
 								<div className="space-y-2">
-									<Label htmlFor="firstName">名</Label>
+									<Label htmlFor="department">部门</Label>
 									<Input
-										id="firstName"
-										value={formData.firstName}
-										onChange={(e) => setFormData((prev) => ({ ...prev, firstName: e.target.value }))}
-										placeholder="请输入名"
+										id="department"
+										value={departmentValue}
+										onChange={(e) => updateSingleValueAttribute("department", e.target.value)}
+										placeholder="例如：研究所、财务、二级部门A"
 									/>
 								</div>
 								<div className="space-y-2">
-									<Label htmlFor="lastName">姓</Label>
+									<Label htmlFor="position">职位</Label>
 									<Input
-										id="lastName"
-										value={formData.lastName}
-										onChange={(e) => setFormData((prev) => ({ ...prev, lastName: e.target.value }))}
-										placeholder="请输入姓"
+										id="position"
+										value={positionValue}
+										onChange={(e) => updateSingleValueAttribute("position", e.target.value)}
+										placeholder="例如：所长、副所长、财务主管"
 									/>
 								</div>
 							</div>
@@ -518,7 +579,7 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 									) : (
 										<div className="grid grid-cols-2 gap-4">
 											{userProfileConfig.attributes
-												.filter((attr) => !["username", "email", "firstName", "lastName", "locale"].includes(attr.name))
+												.filter((attr) => !RESERVED_PROFILE_ATTRIBUTE_NAMES.includes(attr.name))
 												.map((attribute) => (
 													<UserProfileField
 														key={attribute.name}
