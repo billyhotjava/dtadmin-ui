@@ -23,6 +23,7 @@ export function getFrontendDashboardRoutes(): RouteObject[] {
 						{ index: true, element: <Navigate to="user" replace /> },
 						{ path: "permission", element: Component("/pages/management/system/permission") },
 						{ path: "role", element: Component("/pages/management/system/role") },
+						{ path: "group", element: Component("/pages/management/system/group") },
 						{ path: "user", element: Component("/pages/management/system/user") },
 						{ path: "user/:id", element: Component("/pages/management/system/user/detail") },
 						{ path: "approval", element: Component("/pages/management/system/approval") },
