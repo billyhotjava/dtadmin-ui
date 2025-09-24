@@ -14,8 +14,9 @@ import { urlJoin } from "./utils";
 
 await registerLocalIcons();
 
-// 只在开发环境中启用mock服务
-if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_MOCK !== "false") {
+const shouldEnableMock = import.meta.env.VITE_ENABLE_MOCK !== "false";
+
+if (shouldEnableMock) {
 	await worker.start({
 		onUnhandledRequest: "bypass",
 		serviceWorker: { url: urlJoin(GLOBAL_CONFIG.publicPath, "mockServiceWorker.js") },

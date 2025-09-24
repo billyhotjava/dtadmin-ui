@@ -1,6 +1,7 @@
 import { Navigate, type RouteObject } from "react-router";
 import { authRoutes } from "./auth";
 import { dashboardRoutes } from "./dashboard";
+import { adminRoutes } from "../admin-routes";
 import { mainRoutes } from "./main";
 
 export const routesSection: RouteObject[] = [
@@ -8,6 +9,8 @@ export const routesSection: RouteObject[] = [
 	...authRoutes,
 	// Dashboard
 	...dashboardRoutes,
+	// Admin
+	...adminRoutes,
 	// Main
 	...mainRoutes,
 	// No Match

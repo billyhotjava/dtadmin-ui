@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
-import { useTranslation } from "react-i18next";
 import { Icon } from "@/components/icon";
+import { useBilingualText } from "@/hooks/useBilingualText";
 import { Button } from "@/ui/button";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/ui/form";
 import { Input } from "@/ui/input";
@@ -8,8 +8,8 @@ import { ReturnButton } from "./components/ReturnButton";
 import { LoginStateEnum, useLoginStateContext } from "./providers/login-provider";
 
 function ResetForm() {
-	const { t } = useTranslation();
 	const { loginState, backToLogin } = useLoginStateContext();
+	const bilingual = useBilingualText();
 	const form = useForm();
 
 	const onFinish = (values: any) => {
@@ -26,8 +26,8 @@ function ResetForm() {
 			<Form {...form}>
 				<form onSubmit={form.handleSubmit(onFinish)} className="space-y-4">
 					<div className="flex flex-col items-center gap-2 text-center">
-						<h1 className="text-2xl font-bold">{t("sys.login.forgetFormTitle")}</h1>
-						<p className="text-balance text-sm text-muted-foreground">{t("sys.login.forgetFormSecondTitle")}</p>
+						<h1 className="text-2xl font-bold">{bilingual("sys.login.forgetFormTitle")}</h1>
+						<p className="text-balance text-sm text-muted-foreground">{bilingual("sys.login.forgetFormSecondTitle")}</p>
 					</div>
 
 					<FormField
@@ -36,14 +36,14 @@ function ResetForm() {
 						render={({ field }) => (
 							<FormItem>
 								<FormControl>
-									<Input placeholder={t("sys.login.email")} {...field} />
+									<Input placeholder={bilingual("sys.login.emaildPlaceholder")} {...field} />
 								</FormControl>
 								<FormMessage />
 							</FormItem>
 						)}
 					/>
 					<Button type="submit" className="w-full">
-						{t("sys.login.sendEmailButton")}
+						{bilingual("sys.login.sendEmailButton")}
 					</Button>
 					<ReturnButton onClick={backToLogin} />
 				</form>

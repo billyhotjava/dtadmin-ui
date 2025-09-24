@@ -1,12 +1,13 @@
 import { Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { KeycloakUser, PaginationParams, UserProfileConfig, UserTableRow } from "#/keycloak";
 import { KeycloakUserProfileService, KeycloakUserService } from "@/api/services/keycloakService";
 import type { CustomUserAttributeKey } from "@/constants/user";
 import { CUSTOM_USER_ATTRIBUTE_KEYS } from "@/constants/user";
 import { Icon } from "@/components/icon";
+import { PERSON_SECURITY_LEVELS } from "@/constants/governance";
 import { usePathname, useRouter } from "@/routes/hooks";
 import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
@@ -14,7 +15,22 @@ import { Card, CardContent, CardHeader } from "@/ui/card";
 import { Input } from "@/ui/input";
 import ResetPasswordModal from "./reset-password-modal";
 import UserModal from "./user-modal";
-import { t } from "@/locales/i18n";
+import { useBilingualText } from "@/hooks/useBilingualText";
+
+const RESERVED_PROFILE_ATTRIBUTE_NAMES = new Set([
+	"username",
+	"email",
+	"firstName",
+	"lastName",
+	"fullName",
+	"locale",
+	"department",
+	"position",
+	"person_security_level",
+	"personnel_security_level",
+	"person_level",
+	"data_levels",
+]);
 
 const RESERVED_PROFILE_ATTRIBUTES = new Set<string>([
 	"username",
@@ -38,6 +54,11 @@ const getSingleAttributeValue = (attributes: Record<string, string[]> | undefine
 export default function UserPage() {
 	const { push } = useRouter();
 	const pathname = usePathname();
+	const bilingual = useBilingualText();
+	const translate = (key: string, fallback: string) => {
+		const value = bilingual(key).trim();
+		return value.length > 0 ? value : fallback;
+	};
 
 	const [users, setUsers] = useState<UserTableRow[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -64,6 +85,10 @@ export default function UserPage() {
 		userId: string;
 		username: string;
 	}>({ open: false, userId: "", username: "" });
+
+	const personLevelLabelMap = useMemo(() => {
+		return new Map(PERSON_SECURITY_LEVELS.map((item) => [item.value, item.label]));
+	}, []);
 
 	// 加载用户列表
 	const loadUsers = useCallback(async (params?: { current?: number; pageSize?: number; search?: string }) => {
@@ -129,7 +154,7 @@ export default function UserPage() {
 		{
 			title: "用户名",
 			dataIndex: "username",
-			width: 250,
+			width: 220,
 			render: (_, record) => (
 				<div className="flex items-center">
 					<div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-medium">
@@ -140,7 +165,8 @@ export default function UserPage() {
 							<span>{record.username}</span>
 							{record.firstName && <span className="text-sm text-muted-foreground">({record.firstName})</span>}
 						</div>
-						<div className="text-sm text-muted-foreground">{record.email?.trim() ? record.email : "未填写邮箱"}</div>
+						<div className="font-medium">{record.username}</div>
+						<div className="text-sm text-muted-foreground">{record.email || "未填写邮箱"}</div>
 					</div>
 				</div>
 			),
@@ -151,7 +177,12 @@ export default function UserPage() {
 			width: 140,
 			render: (_: string[] | undefined, record) => {
 				const value = getSingleAttributeValue(record.attributes, "personnel_security_level");
-				return value ? <Badge variant="outline">{value}</Badge> : "-";
+			title: "姓名",
+			dataIndex: "firstName",
+			width: 160,
+			render: (_: string, record) => {
+				const name = (record.firstName ?? record.lastName ?? "").trim();
+				return name.length > 0 ? name : "-";
 			},
 		},
 		{
@@ -160,7 +191,8 @@ export default function UserPage() {
 			width: 180,
 			render: (_: string[] | undefined, record) => {
 				const value = getSingleAttributeValue(record.attributes, "department");
-				return value || "-";
+				const department = record.attributes?.department?.[0]?.trim();
+				return department && department.length > 0 ? department : "-";
 			},
 		},
 		{
@@ -170,6 +202,20 @@ export default function UserPage() {
 			render: (_: string[] | undefined, record) => {
 				const value = getSingleAttributeValue(record.attributes, "position");
 				return value || "-";
+				const position = record.attributes?.position?.[0]?.trim();
+				return position && position.length > 0 ? position : "-";
+			},
+		},
+		{
+			title: "人员密级",
+			dataIndex: ["attributes", "personnel_security_level"],
+			width: 150,
+			render: (_: string[] | undefined, record) => {
+				const levelValue =
+					record.attributes?.personnel_security_level?.[0] || record.attributes?.person_security_level?.[0];
+				if (!levelValue) return "-";
+				const label = personLevelLabelMap.get(levelValue) ?? levelValue;
+				return label !== levelValue ? `${label}（${levelValue}）` : label;
 			},
 		},
 		{
@@ -184,9 +230,9 @@ export default function UserPage() {
 
 		// 动态添加UserProfile字段列
 		...(userProfileConfig?.attributes
-			?.filter((attr) => !RESERVED_PROFILE_ATTRIBUTES.has(attr.name))
+			?.filter((attr) => !RESERVED_PROFILE_ATTRIBUTE_NAMES.has(attr.name))
 			.map((attr) => ({
-				title: t(attr.displayName.replace(/\$\{([^}]*)\}/g, "$1")) || attr.name,
+				title: translate(attr.displayName.replace(/\$\{([^}]*)\}/g, "$1"), attr.name),
 				dataIndex: ["attributes", attr.name],
 				width: 150,
 				render: (value: string[] | undefined) => {

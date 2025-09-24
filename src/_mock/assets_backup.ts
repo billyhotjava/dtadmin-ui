@@ -19,6 +19,16 @@ export const DB_MENU: Menu[] = [
 		path: "/workbench",
 		component: "/pages/dashboard/workbench",
 	},
+	{
+		id: "data_security",
+		parentId: "group_dashboard",
+		name: "sys.nav.dataSecurity",
+		code: "security",
+		icon: "solar:shield-keyhole-bold",
+		type: MENU,
+		path: "/security/assets",
+		component: "/pages/security/data-security",
+	},
 
 	// group_pages
 	// management
@@ -82,6 +92,15 @@ export const DB_MENU: Menu[] = [
 		type: MENU,
 		path: "/management/system/role",
 		component: "/pages/management/system/role",
+	},
+	{
+		id: "management_system_group",
+		parentId: "management_system",
+		name: "sys.nav.system.group",
+		code: "management:system:group",
+		type: MENU,
+		path: "/management/system/group",
+		component: "/pages/management/system/group",
 	},
 	{
 		id: "management_system_permission",

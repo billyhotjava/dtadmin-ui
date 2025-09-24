@@ -7,6 +7,7 @@ import { Button } from "@/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/ui/dialog";
 import { Input } from "@/ui/input";
 import { Label } from "@/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/select";
 import { Textarea } from "@/ui/textarea";
 
 interface GroupModalProps {
@@ -17,10 +18,19 @@ interface GroupModalProps {
 	onSuccess: () => void;
 }
 
+const ORG_TYPES = [
+	{ value: "COMPANY", label: "公司" },
+	{ value: "DEPARTMENT", label: "部门" },
+	{ value: "TEAM", label: "团队" },
+	{ value: "PROJECT", label: "项目" },
+];
+
 interface FormData {
 	name: string;
 	path: string;
 	description: string;
+	orgCode: string;
+	orgType: string;
 }
 
 export default function GroupModal({ open, mode, group, onCancel, onSuccess }: GroupModalProps) {
@@ -28,15 +38,18 @@ export default function GroupModal({ open, mode, group, onCancel, onSuccess }: G
 		name: "",
 		path: "",
 		description: "",
+		orgCode: "",
+		orgType: "",
 	});
 
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string>("");
 
 	// 从attributes中提取描述
-	const getDescriptionFromAttributes = useCallback((attributes?: Record<string, string[]>): string => {
-		if (!attributes || !attributes.description) return "";
-		return attributes.description[0] || "";
+	const getAttributeValue = useCallback((attributes: Record<string, string[]> | undefined, key: string): string => {
+		if (!attributes) return "";
+		const value = attributes[key];
+		return value && value.length > 0 ? value[0] : "";
 	}, []);
 
 	// 初始化表单数据
@@ -45,23 +58,33 @@ export default function GroupModal({ open, mode, group, onCancel, onSuccess }: G
 			setFormData({
 				name: group.name || "",
 				path: group.path || "",
-				description: getDescriptionFromAttributes(group.attributes),
+				description: getAttributeValue(group.attributes, "description"),
+				orgCode: getAttributeValue(group.attributes, "orgCode"),
+				orgType: getAttributeValue(group.attributes, "orgType"),
 			});
 		} else {
 			setFormData({
 				name: "",
 				path: "",
 				description: "",
+				orgCode: "",
+				orgType: "",
 			});
 		}
 		setError("");
-	}, [mode, group, getDescriptionFromAttributes]);
+	}, [mode, group, getAttributeValue]);
 
 	// 构建attributes对象
-	const buildAttributes = (description: string): Record<string, string[]> => {
+	const buildAttributes = (description: string, orgCode: string, orgType: string): Record<string, string[]> => {
 		const attributes: Record<string, string[]> = {};
 		if (description.trim()) {
 			attributes.description = [description.trim()];
+		}
+		if (orgCode.trim()) {
+			attributes.orgCode = [orgCode.trim()];
+		}
+		if (orgType.trim()) {
+			attributes.orgType = [orgType.trim()];
 		}
 		return attributes;
 	};
@@ -86,7 +109,7 @@ export default function GroupModal({ open, mode, group, onCancel, onSuccess }: G
 				const createData: CreateGroupRequest = {
 					name: formData.name,
 					path: formData.path || `/${formData.name}`,
-					attributes: buildAttributes(formData.description),
+					attributes: buildAttributes(formData.description, formData.orgCode, formData.orgType),
 				};
 
 				await KeycloakGroupService.createGroup(createData);
@@ -95,7 +118,7 @@ export default function GroupModal({ open, mode, group, onCancel, onSuccess }: G
 				const updateData: UpdateGroupRequest = {
 					name: formData.name,
 					path: formData.path,
-					attributes: buildAttributes(formData.description),
+					attributes: buildAttributes(formData.description, formData.orgCode, formData.orgType),
 				};
 
 				await KeycloakGroupService.updateGroup(group.id, updateData);
@@ -138,6 +161,17 @@ export default function GroupModal({ open, mode, group, onCancel, onSuccess }: G
 					</div>
 
 					<div className="space-y-2">
+						<Label htmlFor="orgCode">组织编码</Label>
+						<Input
+							id="orgCode"
+							value={formData.orgCode}
+							onChange={(e) => setFormData((prev) => ({ ...prev, orgCode: e.target.value }))}
+							placeholder="如：DPT-001"
+						/>
+						<p className="text-xs text-muted-foreground">组织编码用于与外部系统或目录同步。</p>
+					</div>
+
+					<div className="space-y-2">
 						<Label htmlFor="path">组路径</Label>
 						<Input
 							id="path"
@@ -146,6 +180,26 @@ export default function GroupModal({ open, mode, group, onCancel, onSuccess }: G
 							placeholder="如：/department/engineering（留空自动生成）"
 						/>
 						<p className="text-xs text-muted-foreground">组在Keycloak中的层级路径，留空将自动生成</p>
+					</div>
+
+					<div className="space-y-2">
+						<Label htmlFor="orgType">组织类型</Label>
+						<Select
+							value={formData.orgType || undefined}
+							onValueChange={(value) => setFormData((prev) => ({ ...prev, orgType: value }))}
+						>
+							<SelectTrigger id="orgType" className="w-full justify-between">
+								<SelectValue placeholder="请选择组织类型" />
+							</SelectTrigger>
+							<SelectContent>
+								{ORG_TYPES.map((item) => (
+									<SelectItem key={item.value} value={item.value}>
+										{item.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<p className="text-xs text-muted-foreground">选择组织类型以帮助业务系统理解层级含义。</p>
 					</div>
 
 					<div className="space-y-2">

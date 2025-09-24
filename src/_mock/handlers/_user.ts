@@ -3,43 +3,85 @@ import { HttpResponse, http } from "msw";
 import { UserApi } from "@/api/services/userService";
 import { ResultStatus } from "@/types/enum";
 import { convertFlatToTree } from "@/utils/tree";
-import { DB_MENU, DB_PERMISSION, DB_ROLE, DB_ROLE_PERMISSION, DB_USER, DB_USER_ROLE } from "../assets_backup";
+import { DB_MENU } from "../assets_backup";
+import { setActiveAdmin, resetActiveAdmin } from "../utils/session";
+
+const ADMIN_PASSWORD = "Devops123@";
+
+const ADMIN_ACCOUNTS = [
+	{
+		id: "admin-sys",
+		username: "sysadmin",
+		email: "sysadmin@example.com",
+		role: "SYSADMIN" as const,
+		displayName: "系统管理员",
+		permissions: ["user.create", "user.update", "org.manage", "config.manage"],
+	},
+	{
+		id: "admin-auth",
+		username: "authadmin",
+		email: "authadmin@example.com",
+		role: "AUTHADMIN" as const,
+		displayName: "授权管理员",
+		permissions: ["approval.review", "approval.assign"],
+	},
+	{
+		id: "admin-audit",
+		username: "auditadmin",
+		email: "auditadmin@example.com",
+		role: "AUDITADMIN" as const,
+		displayName: "安全审计员",
+		permissions: ["audit.read", "audit.export"],
+	},
+];
+
+const baseMenu = convertFlatToTree(DB_MENU);
 
 const signIn = http.post(`/api${UserApi.SignIn}`, async ({ request }) => {
 	const { username, password } = (await request.json()) as Record<string, string>;
 
-	const user = DB_USER.find((item) => item.username === username);
-
-	if (!user || user.password !== password) {
-		return HttpResponse.json({
-			status: 10001,
-			message: "Incorrect username or password.",
-		});
+	const account = ADMIN_ACCOUNTS.find((item) => item.username === username);
+	if (!account || password !== ADMIN_PASSWORD) {
+		return HttpResponse.json(
+			{
+				status: ResultStatus.ERROR,
+				message: "用户名或密码错误",
+			},
+			{ status: 401 },
+		);
 	}
-	// delete password
-	const { password: _, ...userWithoutPassword } = user;
 
-	// user role
-	const roles = DB_USER_ROLE.filter((item) => item.userId === user.id).map((item) =>
-		DB_ROLE.find((role) => role.id === item.roleId),
-	);
-
-	// user permissions
-	const permissions = DB_ROLE_PERMISSION.filter((item) => roles.some((role) => role?.id === item.roleId)).map((item) =>
-		DB_PERMISSION.find((permission) => permission.id === item.permissionId),
-	);
-
-	const menu = convertFlatToTree(DB_MENU);
+	setActiveAdmin({
+		allowed: true,
+		role: account.role,
+		username: account.username,
+		email: account.email,
+	});
 
 	return HttpResponse.json({
 		status: ResultStatus.SUCCESS,
-		message: "",
+		message: "登录成功",
 		data: {
-			user: { ...userWithoutPassword, roles, permissions, menu },
+			user: {
+				id: account.id,
+				email: account.email,
+				username: account.username,
+				firstName: account.displayName,
+				avatar: `https://avatars.dicebear.com/api/initials/${account.username}.svg`,
+				enabled: true,
+				roles: [account.role],
+				permissions: account.permissions,
+				menu: baseMenu,
+			},
 			accessToken: faker.string.uuid(),
 			refreshToken: faker.string.uuid(),
 		},
 	});
+});
+
+const logout = http.post(`/api${UserApi.Logout}`, async () => {
+	resetActiveAdmin();
+	return HttpResponse.json({ status: ResultStatus.SUCCESS, message: "已退出", data: null });
 });
 
 const userList = http.get("/api/user", async () => {
@@ -56,4 +98,4 @@ const userList = http.get("/api/user", async () => {
 	);
 });
 
-export { signIn, userList };
+export { signIn, logout, userList };

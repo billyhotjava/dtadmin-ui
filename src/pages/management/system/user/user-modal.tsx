@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { CreateUserRequest, KeycloakRole, KeycloakUser, UpdateUserRequest, UserProfileConfig } from "#/keycloak";
 import { KeycloakRoleService, KeycloakUserProfileService, KeycloakUserService } from "@/api/services/keycloakService";
@@ -21,6 +21,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/ui/switch";
 import { UserProfileField } from "./user-profile-field";
 import { t } from "@/locales/i18n";
+import {
+	PERSON_SECURITY_LEVELS,
+	deriveDataLevels,
+	isApplicationAdminRole,
+	isDataRole,
+	isGovernanceRole,
+} from "@/constants/governance";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/select";
+
+const RESERVED_PROFILE_ATTRIBUTE_NAMES = [
+	"username",
+	"email",
+	"firstName",
+	"lastName",
+	"fullName",
+	"locale",
+	"department",
+	"position",
+	"person_security_level",
+	"personnel_security_level",
+	"person_level",
+	"data_levels",
+];
 
 interface UserModalProps {
 	open: boolean;
@@ -36,7 +59,6 @@ interface FormData {
 	email: string;
 	personnelSecurityLevel: string;
 	department: string;
-	position: string;
 	enabled: boolean;
 	emailVerified: boolean;
 	attributes: Record<string, string[]>;
@@ -77,19 +99,114 @@ CUSTOM_USER_ATTRIBUTE_KEY_SET.forEach((key) => RESERVED_ATTRIBUTE_NAMES.add(key)
 
 export default function UserModal({ open, mode, user, onCancel, onSuccess }: UserModalProps) {
 	const [formData, setFormData] = useState<FormData>(() => createEmptyFormData());
+	const [formData, setFormData] = useState<FormData>({
+		username: "",
+		fullName: "",
+		email: "",
+		enabled: true,
+		emailVerified: false,
+		attributes: {},
+	});
 
-	const [formState, setFormState] = useState<FormState>(() => createEmptyFormState());
+	const [formState, setFormState] = useState<FormState>({
+		originalData: {
+			username: "",
+			fullName: "",
+			email: "",
+			enabled: true,
+			emailVerified: false,
+			attributes: {},
+		},
+		originalRoles: [],
+		roleChanges: [],
+	});
 
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string>("");
 	const [roles, setRoles] = useState<KeycloakRole[]>([]);
 	const [userRoles, setUserRoles] = useState<KeycloakRole[]>([]);
 	const [roleError, setRoleError] = useState<string>("");
+	const [personLevel, setPersonLevel] = useState<string>("NON_SECRET");
 
 	// UserProfile相关状态
 	const [userProfileConfig, setUserProfileConfig] = useState<UserProfileConfig | null>(null);
 	const [profileLoading, setProfileLoading] = useState(false);
 	//const [setProfileError] = useState<string>("");
+
+	const normalizeAttributesForState = useCallback(
+		(attributes: Record<string, string[]> = {}, level?: string): Record<string, string[]> => {
+			const cloned: Record<string, string[]> = {};
+			Object.entries(attributes).forEach(([key, value]) => {
+				if (Array.isArray(value)) {
+					cloned[key] = [...value];
+				}
+			});
+
+			const candidateLevel = (
+				level ||
+				cloned.personnel_security_level?.[0] ||
+				cloned.person_security_level?.[0] ||
+				cloned.person_level?.[0] ||
+				""
+			).toUpperCase();
+			const resolvedLevel = PERSON_SECURITY_LEVELS.some((option) => option.value === candidateLevel)
+				? candidateLevel
+				: undefined;
+
+			if (resolvedLevel) {
+				const derived = deriveDataLevels(resolvedLevel);
+				cloned.personnel_security_level = [resolvedLevel];
+				cloned.person_security_level = [resolvedLevel];
+				cloned.person_level = [resolvedLevel];
+				cloned.data_levels = [...derived];
+			} else {
+				delete cloned.personnel_security_level;
+				delete cloned.person_security_level;
+				delete cloned.person_level;
+				delete cloned.data_levels;
+			}
+
+			Object.keys(cloned).forEach((key) => {
+				const value = cloned[key];
+				if (Array.isArray(value)) {
+					const sanitized = value
+						.map((item) => (typeof item === "string" ? item.trim() : item))
+						.filter((item): item is string => typeof item === "string" && item.length > 0);
+
+					if (sanitized.length > 0) {
+						cloned[key] = sanitized;
+					} else {
+						delete cloned[key];
+					}
+				}
+			});
+
+			return cloned;
+		},
+		[],
+	);
+
+	const buildAttributesPayload = useCallback((): Record<string, string[]> => {
+		return normalizeAttributesForState(formData.attributes, personLevel);
+	}, [formData.attributes, normalizeAttributesForState, personLevel]);
+
+	const derivedDataLevels = useMemo(() => deriveDataLevels(personLevel), [personLevel]);
+
+	const updateSingleValueAttribute = (key: string, value: string) => {
+		setFormData((prev) => {
+			const nextAttributes = { ...prev.attributes };
+			if (value.trim()) {
+				nextAttributes[key] = [value];
+			} else {
+				delete nextAttributes[key];
+			}
+
+			return {
+				...prev,
+				attributes: nextAttributes,
+			};
+		});
+	};
 
 	// 加载UserProfile配置
 	const loadUserProfileConfig = useCallback(async () => {
@@ -150,9 +267,27 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 				position: user.attributes?.position?.[0] || "",
 				enabled: user.enabled ?? true,
 				emailVerified: user.emailVerified ?? false,
-				attributes: filteredAttributes,
+			const candidateLevel = (
+				user.attributes?.personnel_security_level?.[0] ||
+				user.attributes?.person_security_level?.[0] ||
+				user.attributes?.person_level?.[0] ||
+				"NON_SECRET"
+			).toUpperCase();
+			const resolvedLevel = PERSON_SECURITY_LEVELS.some((option) => option.value === candidateLevel)
+				? candidateLevel
+				: "NON_SECRET";
+			const normalizedAttributes = normalizeAttributesForState(user.attributes || {}, resolvedLevel);
+
+			const initialFormData: FormData = {
+				username: user.username || "",
+				fullName: user.firstName || user.lastName || "",
+				email: user.email || "",
+				enabled: user.enabled ?? true,
+				emailVerified: user.emailVerified ?? false,
+				attributes: normalizedAttributes,
 			};
 
+			setPersonLevel(resolvedLevel);
 			setFormData(initialFormData);
 			setFormState({
 				originalData: {
@@ -163,7 +298,6 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 				roleChanges: [],
 			});
 
-			// 加载用户角色
 			if (user.id) {
 				loadUserRoles(user.id).then((roles) => {
 					setFormState((prev) => ({
@@ -175,12 +309,34 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 		} else {
 			const emptyData = createEmptyFormData();
 			setFormData(emptyData);
-			setFormState(createEmptyFormState());
+			const defaultLevel = "NON_SECRET";
+			const baseAttributes = normalizeAttributesForState({}, defaultLevel);
+			setPersonLevel(defaultLevel);
+			setFormData({
+				username: "",
+				fullName: "",
+				email: "",
+				enabled: true,
+				emailVerified: false,
+				attributes: baseAttributes,
+			});
+			setFormState({
+				originalData: {
+					username: "",
+					fullName: "",
+					email: "",
+					enabled: true,
+					emailVerified: false,
+					attributes: baseAttributes,
+				},
+				originalRoles: [],
+				roleChanges: [],
+			});
 			setUserRoles([]);
 		}
 		setError("");
 		setRoleError("");
-	}, [mode, user, loadUserRoles]);
+	}, [mode, user, loadUserRoles, normalizeAttributesForState]);
 
 	// 加载所有角色
 	useEffect(() => {
@@ -230,12 +386,16 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 	};
 
 	const handleSubmit = async () => {
-		if (!formData.username.trim()) {
+		const username = formData.username.trim();
+		const fullName = formData.fullName.trim();
+		const email = formData.email.trim();
+
+		if (!username) {
 			setError("用户名不能为空");
 			return;
 		}
 
-		if (!formData.fullName.trim()) {
+		if (!fullName) {
 			setError("姓名不能为空");
 			return;
 		}
@@ -244,7 +404,9 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 		if (userProfileConfig?.attributes) {
 			for (const attribute of userProfileConfig.attributes) {
 				// 跳过基础字段，因为它们已经在上面检查过了
-				if (RESERVED_ATTRIBUTE_NAMES.has(attribute.name)) {
+				if (
+					["username", "email", "firstName", "lastName", "fullName", "department", "position"].includes(attribute.name)
+				) {
 					continue;
 				}
 
@@ -277,6 +439,7 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 
 		setLoading(true);
 		setError("");
+		const attributesPayload = buildAttributesPayload();
 
 		try {
 			const username = formData.username.trim();
@@ -290,11 +453,14 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 					username,
 					email: email || undefined,
 					firstName: fullName,
-					lastName: "",
 					enabled: formData.enabled,
 					emailVerified: formData.emailVerified,
 					attributes: attributesPayload,
 				};
+
+				if (email) {
+					createData.email = email;
+				}
 
 				const response = await KeycloakUserService.createUser(createData);
 				if (response.userId) {
@@ -314,7 +480,8 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 						username,
 						email: emailPayload,
 						firstName: fullName,
-						lastName: "",
+						email,
+						firstName: fullName,
 						enabled: formData.enabled,
 						emailVerified: formData.emailVerified,
 						attributes: attributesPayload,
@@ -368,24 +535,49 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 	// 检查用户信息是否有变更
 	const hasUserInfoChanged = (): boolean => {
 		const { originalData } = formState;
+		const normalizedAttributes = buildAttributesPayload();
 		return (
 			formData.username !== originalData.username ||
 			formData.email !== originalData.email ||
 			formData.fullName !== originalData.fullName ||
 			formData.personnelSecurityLevel !== originalData.personnelSecurityLevel ||
 			formData.department !== originalData.department ||
-			formData.position !== originalData.position ||
 			formData.enabled !== originalData.enabled ||
 			formData.emailVerified !== originalData.emailVerified ||
-			JSON.stringify(formData.attributes) !== JSON.stringify(originalData.attributes)
+			JSON.stringify(normalizedAttributes) !== JSON.stringify(originalData.attributes || {})
 		);
+	};
+
+	const resolveRoleBadgeVariant = (
+		roleName: string,
+	): "default" | "secondary" | "destructive" | "info" | "warning" | "success" | "error" | "outline" => {
+		if (isDataRole(roleName)) return "secondary";
+		if (isGovernanceRole(roleName)) return "warning";
+		if (isApplicationAdminRole(roleName)) return "info";
+		return "default";
 	};
 
 	const handleRoleToggle = (role: KeycloakRole) => {
 		const hasRole = userRoles.some((r) => r.id === role.id);
+		const roleName = role.name;
+
+		if (isDataRole(roleName)) {
+			toast.warning("数据密级角色由人员密级自动分配，请在上方调整人员密级。");
+			return;
+		}
+
+		if (!hasRole) {
+			if (isApplicationAdminRole(roleName) && userRoles.some((existing) => isGovernanceRole(existing.name))) {
+				toast.error("请先移除治理类角色后再分配应用管理员角色。");
+				return;
+			}
+			if (isGovernanceRole(roleName) && userRoles.some((existing) => isApplicationAdminRole(existing.name))) {
+				toast.error("应用管理员角色与治理类角色互斥，请先移除应用管理员角色。");
+				return;
+			}
+		}
 
 		if (hasRole) {
-			// 移除角色
 			setUserRoles((prev) => prev.filter((r) => r.id !== role.id));
 			setFormState((prev) => ({
 				...prev,
@@ -395,7 +587,6 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 				],
 			}));
 		} else {
-			// 添加角色
 			setUserRoles((prev) => [...prev, role]);
 			setFormState((prev) => ({
 				...prev,
@@ -406,6 +597,9 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 			}));
 		}
 	};
+
+	const departmentValue = formData.attributes.department?.[0] ?? "";
+	const positionValue = formData.attributes.position?.[0] ?? "";
 
 	const title = mode === "create" ? "创建用户" : "编辑用户";
 
@@ -438,6 +632,16 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 										onChange={(e) => setFormData((prev) => ({ ...prev, username: e.target.value }))}
 										placeholder="请输入用户名"
 									/>
+									<p className="text-xs text-muted-foreground">用户名即登录名，需要保持唯一。</p>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="fullName">姓名 *</Label>
+									<Input
+										id="fullName"
+										value={formData.fullName}
+										onChange={(e) => setFormData((prev) => ({ ...prev, fullName: e.target.value }))}
+										placeholder="请输入姓名"
+									/>
 								</div>
 								<div className="space-y-2">
 									<Label htmlFor="fullName">姓名 *</Label>
@@ -454,17 +658,15 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 									/>
 								</div>
 							</div>
-
-							<div className="grid grid-cols-2 gap-4">
-								<div className="space-y-2">
 									<Label htmlFor="email">邮箱</Label>
 									<Input
 										id="email"
 										type="email"
 										value={formData.email}
 										onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
-										placeholder="请输入邮箱"
+										placeholder="请输入邮箱（可选）"
 									/>
+									<p className="text-xs text-muted-foreground">邮箱用于接收通知，可选填写。</p>
 								</div>
 								<div className="space-y-2">
 									<Label htmlFor="personnelSecurityLevel">人员密级</Label>
@@ -490,8 +692,6 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 									</Select>
 								</div>
 							</div>
-
-							<div className="grid grid-cols-2 gap-4">
 								<div className="space-y-2">
 									<Label htmlFor="department">部门</Label>
 									<Input
@@ -504,6 +704,10 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 											}))
 										}
 										placeholder={`例如：${DEPARTMENT_SUGGESTIONS.join("、")}`}
+
+										value={departmentValue}
+										onChange={(e) => updateSingleValueAttribute("department", e.target.value)}
+										placeholder="例如：研究所、财务、二级部门A"
 									/>
 								</div>
 								<div className="space-y-2">
@@ -517,7 +721,9 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 												position: e.target.value,
 											}))
 										}
-										placeholder={`例如：${POSITION_SUGGESTIONS.join("、")}`}
+										value={positionValue}
+										onChange={(e) => updateSingleValueAttribute("position", e.target.value)}
+										placeholder="例如：所长、副所长、财务主管"
 									/>
 								</div>
 							</div>
@@ -533,7 +739,7 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 									) : (
 										<div className="grid grid-cols-2 gap-4">
 											{userProfileConfig.attributes
-												.filter((attr) => !RESERVED_ATTRIBUTE_NAMES.has(attr.name))
+												.filter((attr) => !RESERVED_PROFILE_ATTRIBUTE_NAMES.includes(attr.name))
 												.map((attribute) => (
 													<UserProfileField
 														key={attribute.name}
@@ -575,6 +781,48 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 							</div>
 						</CardContent>
 					</Card>
+
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-lg">安全属性</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="space-y-2">
+								<Label>人员密级 *</Label>
+								<Select value={personLevel} onValueChange={(value) => setPersonLevel(value)}>
+									<SelectTrigger className="w-full justify-between">
+										<SelectValue placeholder="请选择人员密级" />
+									</SelectTrigger>
+									<SelectContent>
+										{PERSON_SECURITY_LEVELS.map((option) => (
+											<SelectItem key={option.value} value={option.value}>
+												{option.label}（{option.value}）
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+								<p className="text-xs text-muted-foreground">
+									人员密级决定自动分配的数据访问范围和可授予的数据密级角色。
+								</p>
+							</div>
+
+							<div className="space-y-2">
+								<Label>可访问数据密级（自动派生）</Label>
+								<div className="flex flex-wrap gap-2">
+									{derivedDataLevels.length > 0 ? (
+										derivedDataLevels.map((level) => (
+											<Badge key={level} variant="secondary">
+												{level.replace("_", " ")}
+											</Badge>
+										))
+									) : (
+										<span className="text-muted-foreground text-sm">未配置人员密级</span>
+									)}
+								</div>
+								<p className="text-xs text-muted-foreground">数据密级角色将由系统自动同步，请勿手动调整。</p>
+							</div>
+						</CardContent>
+					</Card>
 					{/* 角色分配 (仅编辑模式) */}
 					{mode === "edit" && user?.id && (
 						<Card>
@@ -591,19 +839,24 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 								<div className="space-y-2">
 									<Label>用户角色</Label>
 									<div className="flex flex-wrap gap-2 mb-4">
-										{userRoles.map((role) => (
-											<Badge key={role.id} variant="default">
-												{role.name}
-												<Button
-													variant="ghost"
-													size="sm"
-													className="ml-1 h-4 w-4 p-0"
-													onClick={() => handleRoleToggle(role)}
-												>
-													<Icon icon="mdi:close" size={12} />
-												</Button>
-											</Badge>
-										))}
+										{userRoles.map((role) => {
+											const allowRemoval = !isDataRole(role.name);
+											return (
+												<Badge key={role.id ?? role.name} variant={resolveRoleBadgeVariant(role.name)}>
+													{role.name}
+													{allowRemoval && (
+														<Button
+															variant="ghost"
+															size="sm"
+															className="ml-1 h-4 w-4 p-0"
+															onClick={() => handleRoleToggle(role)}
+														>
+															<Icon icon="mdi:close" size={12} />
+														</Button>
+													)}
+												</Badge>
+											);
+										})}
 										{userRoles.length === 0 && <span className="text-muted-foreground">暂无分配角色</span>}
 									</div>
 
@@ -611,10 +864,11 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 									<div className="flex flex-wrap gap-2">
 										{roles
 											.filter((role) => !userRoles.some((ur) => ur.id === role.id))
+											.filter((role) => !isDataRole(role.name))
 											.map((role) => (
 												<Badge
-													key={role.id}
-													variant="outline"
+													key={role.id ?? role.name}
+													variant={resolveRoleBadgeVariant(role.name)}
 													className="cursor-pointer hover:bg-primary hover:text-primary-foreground"
 													onClick={() => handleRoleToggle(role)}
 												>
@@ -623,6 +877,9 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 												</Badge>
 											))}
 									</div>
+									<p className="text-xs text-muted-foreground mt-2">
+										治理角色与应用管理员角色互斥；数据密级角色由系统根据人员密级自动管理。
+									</p>
 								</div>
 							</CardContent>
 						</Card>
