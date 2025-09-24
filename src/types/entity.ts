@@ -101,8 +101,10 @@ export type MenuTree = Menu & {
 export interface AuditLog {
 	id: number;
 	action: string;
+	module: string;
 	target: string;
 	actor: string; // 后端实际字段名（对应前端的 operator 概念）
+	ip: string;
 	details: string; // 后端实际字段名（对应前端的 content 概念）
 	at: string; // 后端实际字段名（对应前端的 createdAt 概念）
 	result?: string; // 后端实际字段名
