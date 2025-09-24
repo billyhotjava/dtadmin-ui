@@ -101,6 +101,7 @@
 					"role": "角色管理",
 					"permission": "菜单管理",
 					"approval": "审批管理",
+					"my_changes": "我发起的变更",
 					"audit_log": "日志审计"
 				}
 			},
@@ -127,7 +128,8 @@
 			"dataSecurityOverview": "资产概览",
 			"system": {
 				"group": "组织机构",
-				"index": "系统管理"
+				"index": "系统管理",
+				"my_changes": "我发起的变更"
 			},
 			"menulevel": {
 				"index": "多级菜单",

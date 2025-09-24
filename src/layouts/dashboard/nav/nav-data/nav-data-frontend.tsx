@@ -50,6 +50,11 @@ export const frontendNavData: NavProps["data"] = [
 						auth: AUTHADMIN_ROLES,
 					},
 					{
+						title: "sys.nav.usermgmt.system.my_changes",
+						path: "/management/system/my-changes",
+						auth: SYSADMIN_ROLES,
+					},
+					{
 						title: "sys.nav.usermgmt.system.audit_log",
 						path: "/management/system/audit-log",
 						auth: AUDITADMIN_ROLES,

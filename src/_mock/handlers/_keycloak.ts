@@ -1,5 +1,8 @@
 import { HttpResponse, http } from "msw";
 import type {
+	ApprovalActionRequest,
+	ApprovalRequest,
+	ApprovalRequestDetail,
 	CreateGroupRequest,
 	CreateRoleRequest,
 	CreateUserRequest,
@@ -23,6 +26,143 @@ const ok = <T>(data: T, message = "success") =>
 const randomId = () => globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2, 10);
 
 const findUserIndex = (id: string) => keycloakDb.users.findIndex((user) => user.id === id);
+
+const approvalRequests: ApprovalRequestDetail[] = [
+	{
+		id: 202405001,
+		requester: "sysadmin",
+		type: "CREATE_USER",
+		reason: "为数据运维团队新成员申请 dataops 账号",
+		createdAt: "2024-05-12T09:30:00+08:00",
+		status: "PENDING",
+		approver: "authadmin",
+		items: [
+			{
+				id: 5101,
+				targetKind: "USER",
+				targetId: "dataops",
+				seqNumber: 1,
+				payload: JSON.stringify({
+					username: "dataops",
+					email: "data.ops@example.com",
+					firstName: "数据运维",
+					enabled: true,
+					attributes: {
+						department: "数据平台组",
+						title: "平台工程师",
+					},
+				}),
+			},
+		],
+	},
+	{
+		id: 202405000,
+		requester: "sysadmin",
+		type: "UPDATE_USER",
+		reason: "同步数据治理专员的组织信息",
+		createdAt: "2024-05-10T11:20:00+08:00",
+		decidedAt: "2024-05-10T15:45:00+08:00",
+		status: "APPROVED",
+		approver: "authadmin",
+		decisionNote: "属性更新已确认",
+		items: [
+			{
+				id: 5102,
+				targetKind: "USER",
+				targetId: "chenyu",
+				seqNumber: 1,
+				payload: JSON.stringify({
+					username: "chenyu",
+					email: "chen.yu@demo.cn",
+					firstName: "陈宇",
+					enabled: true,
+					attributes: {
+						department: "数据治理小组",
+						title: "数据治理专员",
+					},
+				}),
+			},
+		],
+	},
+	{
+		id: 202404998,
+		requester: "sysadmin",
+		type: "DELETE_USER",
+		reason: "清理已离职账号 legacy.ops",
+		createdAt: "2024-05-08T08:10:00+08:00",
+		decidedAt: "2024-05-08T09:00:00+08:00",
+		status: "REJECTED",
+		approver: "authadmin",
+		decisionNote: "请补充离职审批单据",
+		items: [
+			{
+				id: 5103,
+				targetKind: "USER",
+				targetId: "legacy.ops",
+				seqNumber: 1,
+				payload: JSON.stringify({
+					username: "legacy.ops",
+					email: "legacy.ops@demo.cn",
+					enabled: false,
+				}),
+			},
+		],
+	},
+	{
+		id: 202404997,
+		requester: "sysadmin",
+		type: "GRANT_ROLE",
+		reason: "为数据分析组批量授权 DATA_STEWARD 角色",
+		createdAt: "2024-05-06T10:00:00+08:00",
+		decidedAt: "2024-05-06T13:25:00+08:00",
+		status: "FAILED",
+		approver: "authadmin",
+		decisionNote: "Keycloak API 超时，稍后重试",
+		errorMessage: "调用 Keycloak 接口超时",
+		items: [
+			{
+				id: 5104,
+				targetKind: "ROLE",
+				targetId: "DATA_STEWARD",
+				seqNumber: 1,
+				payload: JSON.stringify({
+					usernames: ["lixiaomei", "wanghong"],
+					role: "DATA_STEWARD",
+				}),
+			},
+		],
+	},
+	{
+		id: 202404996,
+		requester: "sysadmin",
+		type: "UPDATE_USER",
+		reason: "更新 jaycee 的多因素认证策略",
+		createdAt: "2024-05-04T09:50:00+08:00",
+		decidedAt: "2024-05-04T11:05:00+08:00",
+		status: "APPLIED",
+		approver: "authadmin",
+		decisionNote: "策略已同步至 Keycloak",
+		items: [
+			{
+				id: 5105,
+				targetKind: "USER",
+				targetId: "jaycee",
+				seqNumber: 1,
+				payload: JSON.stringify({
+					username: "jaycee",
+					email: "jay.cee@demo.cn",
+					attributes: {
+						mfa: "required",
+					},
+				}),
+			},
+		],
+	},
+];
+
+const listApprovalRequests = (): ApprovalRequest[] => approvalRequests.map(({ items, ...rest }) => ({ ...rest }));
+
+const findApprovalIndex = (id: number) => approvalRequests.findIndex((item) => item.id === id);
 
 const keycloakHandlers = [
 	// ---- Users ----
@@ -311,23 +451,108 @@ const keycloakHandlers = [
 	}),
 
 	// ---- Approvals & Sync ----
-	http.get(`${API_PREFIX}/approvals`, () => {
-		return HttpResponse.json([
-			{ id: 1, requester: "sysadmin", resource: "USER", status: "PENDING" },
-		]);
+	http.get("/api/approval-requests", () => {
+		return HttpResponse.json({
+			status: ResultStatus.SUCCESS,
+			message: "success",
+			data: listApprovalRequests(),
+		});
 	}),
 
-	http.post(`${API_PREFIX}/approvals/:id/:action`, ({ params }) => {
-		if (!params.id) {
+	http.get("/api/approval-requests/:id", ({ params }) => {
+		const id = Number(params.id);
+		const record = approvalRequests.find((item) => item.id === id);
+		if (!record) {
+			return HttpResponse.json({ status: ResultStatus.ERROR, message: "审批请求不存在" }, { status: 404 });
+		}
+		return HttpResponse.json({
+			status: ResultStatus.SUCCESS,
+			message: "success",
+			data: record,
+		});
+	}),
+
+	http.get(`${API_PREFIX}/approvals`, () => {
+		return ok(listApprovalRequests(), "success");
+	}),
+
+	http.post(`${API_PREFIX}/approvals/:id/:action`, async ({ params, request }) => {
+		const id = Number(params.id);
+		if (!Number.isFinite(id)) {
 			return HttpResponse.json({ status: ResultStatus.ERROR, message: "请求不存在" }, { status: 404 });
 		}
-		return ok(null, `审批${params.action}成功`);
+		const index = findApprovalIndex(id);
+		if (index === -1) {
+			return HttpResponse.json({ status: ResultStatus.ERROR, message: "请求不存在" }, { status: 404 });
+		}
+		let body: ApprovalActionRequest | undefined;
+		try {
+			body = (await request.json()) as ApprovalActionRequest;
+		} catch (error) {
+			body = undefined;
+		}
+
+		const action = String(params.action ?? "").toLowerCase();
+		const now = new Date().toISOString();
+		const current = approvalRequests[index];
+		const approver = current.approver || "authadmin";
+
+		if (action === "approve") {
+			approvalRequests[index] = {
+				...current,
+				status: "APPROVED",
+				approver,
+				decidedAt: now,
+				decisionNote: body?.note || "Approved via mock",
+				errorMessage: undefined,
+			};
+			return ok(approvalRequests[index], "审批通过成功");
+		}
+
+		if (action === "reject") {
+			approvalRequests[index] = {
+				...current,
+				status: "REJECTED",
+				approver,
+				decidedAt: now,
+				decisionNote: body?.note || "已拒绝",
+			};
+			return ok(approvalRequests[index], "审批拒绝成功");
+		}
+
+		if (action === "process") {
+			approvalRequests[index] = {
+				...current,
+				status: "APPLIED",
+				approver,
+				decidedAt: now,
+				decisionNote: body?.note || current.decisionNote,
+				errorMessage: undefined,
+			};
+			return ok(approvalRequests[index], "同步完成");
+		}
+
+		return HttpResponse.json(
+			{ status: ResultStatus.ERROR, message: `不支持的操作: ${params.action}` },
+			{ status: 400 },
+		);
 	}),
 
 	http.post(`${API_PREFIX}/user-sync/process/:id`, ({ params }) => {
-		if (!params.id) {
+		const id = Number(params.id);
+		const index = findApprovalIndex(id);
+		if (index === -1) {
 			return HttpResponse.json({ status: ResultStatus.ERROR, message: "请求不存在" }, { status: 404 });
 		}
+		const current = approvalRequests[index];
+		approvalRequests[index] = {
+			...current,
+			status: "APPLIED",
+			approver: current.approver || "authadmin",
+			decidedAt: current.decidedAt ?? new Date().toISOString(),
+			decisionNote: current.decisionNote ?? "已同步至 Keycloak",
+			errorMessage: undefined,
+		};
 		return ok(null, "同步完成");
 	}),
 ];

@@ -132,6 +132,7 @@
 					"role": "Role Management",
 					"permission": "Menu Management",
 					"approval": "Approval Management",
+					"my_changes": "My Change Requests",
 					"audit_log": "Audit Log"
 				}
 			},
@@ -148,7 +149,8 @@
 			"dataSecurityOverview": "Asset Overview",
 			"system": {
 				"group": "Organization",
-				"index": "System Management"
+				"index": "System Management",
+				"my_changes": "My Change Requests"
 			}
 		},
 		"workbench": {
