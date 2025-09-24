@@ -2,6 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { CreateUserRequest, KeycloakRole, KeycloakUser, UpdateUserRequest, UserProfileConfig } from "#/keycloak";
 import { KeycloakRoleService, KeycloakUserProfileService, KeycloakUserService } from "@/api/services/keycloakService";
+import type { CustomUserAttributeKey } from "@/constants/user";
+import {
+	CUSTOM_USER_ATTRIBUTE_KEY_SET,
+	DEPARTMENT_SUGGESTIONS,
+	PERSONNEL_SECURITY_LEVEL_OPTIONS,
+	POSITION_SUGGESTIONS,
+} from "@/constants/user";
 import { Icon } from "@/components/icon";
 import { Alert, AlertDescription } from "@/ui/alert";
 import { Badge } from "@/ui/badge";
@@ -10,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/ui/dialog";
 import { Input } from "@/ui/input";
 import { Label } from "@/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/select";
 import { Switch } from "@/ui/switch";
 import { UserProfileField } from "./user-profile-field";
 import { t } from "@/locales/i18n";
@@ -24,9 +32,11 @@ interface UserModalProps {
 
 interface FormData {
 	username: string;
+	fullName: string;
 	email: string;
-	firstName: string;
-	lastName: string;
+	personnelSecurityLevel: string;
+	department: string;
+	position: string;
 	enabled: boolean;
 	emailVerified: boolean;
 	attributes: Record<string, string[]>;
@@ -43,30 +53,32 @@ interface FormState {
 	roleChanges: RoleChange[];
 }
 
-export default function UserModal({ open, mode, user, onCancel, onSuccess }: UserModalProps) {
-	const [formData, setFormData] = useState<FormData>({
-		username: "",
-		email: "",
-		firstName: "",
-		lastName: "",
-		enabled: true,
-		emailVerified: false,
-		attributes: {},
-	});
+const createEmptyFormData = (): FormData => ({
+	username: "",
+	fullName: "",
+	email: "",
+	personnelSecurityLevel: "",
+	department: "",
+	position: "",
+	enabled: true,
+	emailVerified: false,
+	attributes: {},
+});
 
-	const [formState, setFormState] = useState<FormState>({
-		originalData: {
-			username: "",
-			email: "",
-			firstName: "",
-			lastName: "",
-			enabled: true,
-			emailVerified: false,
-			attributes: {},
-		},
-		originalRoles: [],
-		roleChanges: [],
-	});
+const createEmptyFormState = (): FormState => ({
+	originalData: createEmptyFormData(),
+	originalRoles: [],
+	roleChanges: [],
+});
+
+const RESERVED_ATTRIBUTE_NAMES = new Set<string>(["username", "email", "firstName", "lastName", "locale", "fullname"]);
+
+CUSTOM_USER_ATTRIBUTE_KEY_SET.forEach((key) => RESERVED_ATTRIBUTE_NAMES.add(key));
+
+export default function UserModal({ open, mode, user, onCancel, onSuccess }: UserModalProps) {
+	const [formData, setFormData] = useState<FormData>(() => createEmptyFormData());
+
+	const [formState, setFormState] = useState<FormState>(() => createEmptyFormState());
 
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string>("");
@@ -120,19 +132,33 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 	// 初始化表单数据
 	useEffect(() => {
 		if (mode === "edit" && user) {
-			const initialFormData = {
+			const filteredAttributes: Record<string, string[]> = {};
+			if (user.attributes) {
+				Object.entries(user.attributes).forEach(([key, value]) => {
+					if (!CUSTOM_USER_ATTRIBUTE_KEY_SET.has(key)) {
+						filteredAttributes[key] = value;
+					}
+				});
+			}
+
+			const initialFormData: FormData = {
 				username: user.username || "",
+				fullName: user.firstName || user.attributes?.fullname?.[0] || "",
 				email: user.email || "",
-				firstName: user.firstName || "",
-				lastName: user.lastName || "",
+				personnelSecurityLevel: user.attributes?.personnel_security_level?.[0] || "",
+				department: user.attributes?.department?.[0] || "",
+				position: user.attributes?.position?.[0] || "",
 				enabled: user.enabled ?? true,
 				emailVerified: user.emailVerified ?? false,
-				attributes: user.attributes || {},
+				attributes: filteredAttributes,
 			};
 
 			setFormData(initialFormData);
 			setFormState({
-				originalData: initialFormData,
+				originalData: {
+					...initialFormData,
+					attributes: { ...initialFormData.attributes },
+				},
 				originalRoles: [],
 				roleChanges: [],
 			});
@@ -147,28 +173,9 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 				});
 			}
 		} else {
-			setFormData({
-				username: "",
-				email: "",
-				firstName: "",
-				lastName: "",
-				enabled: true,
-				emailVerified: false,
-				attributes: {},
-			});
-			setFormState({
-				originalData: {
-					username: "",
-					email: "",
-					firstName: "",
-					lastName: "",
-					enabled: true,
-					emailVerified: false,
-					attributes: {},
-				},
-				originalRoles: [],
-				roleChanges: [],
-			});
+			const emptyData = createEmptyFormData();
+			setFormData(emptyData);
+			setFormState(createEmptyFormState());
 			setUserRoles([]);
 		}
 		setError("");
@@ -183,14 +190,53 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 		}
 	}, [open, loadRoles, loadUserProfileConfig]);
 
+	const buildAttributesPayload = () => {
+		const attributes: Record<string, string[]> = { ...formData.attributes };
+
+		const customAttributes: Array<{
+			key: CustomUserAttributeKey;
+			value: string;
+			originalValue: string;
+		}> = [
+			{
+				key: "personnel_security_level",
+				value: formData.personnelSecurityLevel,
+				originalValue: formState.originalData.personnelSecurityLevel,
+			},
+			{
+				key: "department",
+				value: formData.department.trim(),
+				originalValue: formState.originalData.department,
+			},
+			{
+				key: "position",
+				value: formData.position.trim(),
+				originalValue: formState.originalData.position,
+			},
+		];
+
+		customAttributes.forEach(({ key, value, originalValue }) => {
+			const normalizedOriginal = originalValue.trim();
+			if (value) {
+				attributes[key] = [value];
+			} else if (normalizedOriginal) {
+				attributes[key] = [];
+			} else {
+				delete attributes[key];
+			}
+		});
+
+		return attributes;
+	};
+
 	const handleSubmit = async () => {
 		if (!formData.username.trim()) {
 			setError("用户名不能为空");
 			return;
 		}
 
-		if (!formData.email.trim()) {
-			setError("邮箱不能为空");
+		if (!formData.fullName.trim()) {
+			setError("姓名不能为空");
 			return;
 		}
 
@@ -198,7 +244,7 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 		if (userProfileConfig?.attributes) {
 			for (const attribute of userProfileConfig.attributes) {
 				// 跳过基础字段，因为它们已经在上面检查过了
-				if (["username", "email", "firstName", "lastName"].includes(attribute.name)) {
+				if (RESERVED_ATTRIBUTE_NAMES.has(attribute.name)) {
 					continue;
 				}
 
@@ -233,15 +279,21 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 		setError("");
 
 		try {
+			const username = formData.username.trim();
+			const fullName = formData.fullName.trim();
+			const email = formData.email.trim();
+			const attributesPayload = buildAttributesPayload();
+			const emailPayload = email || (formState.originalData.email ? "" : undefined);
+
 			if (mode === "create") {
 				const createData: CreateUserRequest = {
-					username: formData.username,
-					email: formData.email,
-					firstName: formData.firstName,
-					lastName: formData.lastName,
+					username,
+					email: email || undefined,
+					firstName: fullName,
+					lastName: "",
 					enabled: formData.enabled,
 					emailVerified: formData.emailVerified,
-					attributes: formData.attributes,
+					attributes: attributesPayload,
 				};
 
 				const response = await KeycloakUserService.createUser(createData);
@@ -259,13 +311,13 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 				if (hasUserInfoChanges) {
 					const updateData: UpdateUserRequest = {
 						id: user.id,
-						username: formData.username,
-						email: formData.email,
-						firstName: formData.firstName,
-						lastName: formData.lastName,
+						username,
+						email: emailPayload,
+						firstName: fullName,
+						lastName: "",
 						enabled: formData.enabled,
 						emailVerified: formData.emailVerified,
-						attributes: formData.attributes,
+						attributes: attributesPayload,
 					};
 
 					const response = await KeycloakUserService.updateUser(user.id, updateData);
@@ -319,8 +371,10 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 		return (
 			formData.username !== originalData.username ||
 			formData.email !== originalData.email ||
-			formData.firstName !== originalData.firstName ||
-			formData.lastName !== originalData.lastName ||
+			formData.fullName !== originalData.fullName ||
+			formData.personnelSecurityLevel !== originalData.personnelSecurityLevel ||
+			formData.department !== originalData.department ||
+			formData.position !== originalData.position ||
 			formData.enabled !== originalData.enabled ||
 			formData.emailVerified !== originalData.emailVerified ||
 			JSON.stringify(formData.attributes) !== JSON.stringify(originalData.attributes)
@@ -386,7 +440,24 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 									/>
 								</div>
 								<div className="space-y-2">
-									<Label htmlFor="email">邮箱 *</Label>
+									<Label htmlFor="fullName">姓名 *</Label>
+									<Input
+										id="fullName"
+										value={formData.fullName}
+										onChange={(e) =>
+											setFormData((prev) => ({
+												...prev,
+												fullName: e.target.value,
+											}))
+										}
+										placeholder="请输入姓名"
+									/>
+								</div>
+							</div>
+
+							<div className="grid grid-cols-2 gap-4">
+								<div className="space-y-2">
+									<Label htmlFor="email">邮箱</Label>
 									<Input
 										id="email"
 										type="email"
@@ -395,25 +466,58 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 										placeholder="请输入邮箱"
 									/>
 								</div>
+								<div className="space-y-2">
+									<Label htmlFor="personnelSecurityLevel">人员密级</Label>
+									<Select
+										value={formData.personnelSecurityLevel || undefined}
+										onValueChange={(value) =>
+											setFormData((prev) => ({
+												...prev,
+												personnelSecurityLevel: value,
+											}))
+										}
+									>
+										<SelectTrigger id="personnelSecurityLevel" className="w-full">
+											<SelectValue placeholder="请选择人员密级" />
+										</SelectTrigger>
+										<SelectContent>
+											{PERSONNEL_SECURITY_LEVEL_OPTIONS.map((option) => (
+												<SelectItem key={option} value={option}>
+													{option}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
 							</div>
 
-							<div className="grid grid-cols-2 gap-4 hidden">
+							<div className="grid grid-cols-2 gap-4">
 								<div className="space-y-2">
-									<Label htmlFor="firstName">名</Label>
+									<Label htmlFor="department">部门</Label>
 									<Input
-										id="firstName"
-										value={formData.firstName}
-										onChange={(e) => setFormData((prev) => ({ ...prev, firstName: e.target.value }))}
-										placeholder="请输入名"
+										id="department"
+										value={formData.department}
+										onChange={(e) =>
+											setFormData((prev) => ({
+												...prev,
+												department: e.target.value,
+											}))
+										}
+										placeholder={`例如：${DEPARTMENT_SUGGESTIONS.join("、")}`}
 									/>
 								</div>
 								<div className="space-y-2">
-									<Label htmlFor="lastName">姓</Label>
+									<Label htmlFor="position">职位</Label>
 									<Input
-										id="lastName"
-										value={formData.lastName}
-										onChange={(e) => setFormData((prev) => ({ ...prev, lastName: e.target.value }))}
-										placeholder="请输入姓"
+										id="position"
+										value={formData.position}
+										onChange={(e) =>
+											setFormData((prev) => ({
+												...prev,
+												position: e.target.value,
+											}))
+										}
+										placeholder={`例如：${POSITION_SUGGESTIONS.join("、")}`}
 									/>
 								</div>
 							</div>
@@ -429,7 +533,7 @@ export default function UserModal({ open, mode, user, onCancel, onSuccess }: Use
 									) : (
 										<div className="grid grid-cols-2 gap-4">
 											{userProfileConfig.attributes
-												.filter((attr) => !["username", "email", "firstName", "lastName", "locale"].includes(attr.name))
+												.filter((attr) => !RESERVED_ATTRIBUTE_NAMES.has(attr.name))
 												.map((attribute) => (
 													<UserProfileField
 														key={attribute.name}

@@ -1,3 +1,5 @@
+import type { CustomUserAttributeKey } from "@/constants/user";
+import { CUSTOM_USER_ATTRIBUTE_KEYS } from "@/constants/user";
 import { Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useCallback, useEffect, useState } from "react";
@@ -14,6 +16,25 @@ import { getAttributeDisplayName } from "@/utils/translation";
 import ResetPasswordModal from "./reset-password-modal";
 import UserModal from "./user-modal";
 import { ApprovalStatus } from "./approval-status";
+
+const RESERVED_PROFILE_ATTRIBUTES = new Set<string>([
+	"username",
+	"email",
+	"firstName",
+	"lastName",
+	"locale",
+	"fullname",
+	...CUSTOM_USER_ATTRIBUTE_KEYS,
+]);
+
+const getSingleAttributeValue = (attributes: Record<string, string[]> | undefined, key: CustomUserAttributeKey) => {
+	const values = attributes?.[key];
+	if (!values || values.length === 0) {
+		return "";
+	}
+	const nonEmpty = values.find((item) => item && item.trim());
+	return nonEmpty ?? values[0] ?? "";
+};
 
 export default function UserDetail() {
 	const { id } = useParams();
@@ -150,7 +171,7 @@ export default function UserDetail() {
 	const getUserProfileAttributeNames = () => {
 		if (!userProfileConfig?.attributes) return [];
 		return userProfileConfig.attributes
-			.filter((attr) => !["username", "email", "firstName", "lastName", "locale"].includes(attr.name))
+			.filter((attr) => !RESERVED_PROFILE_ATTRIBUTES.has(attr.name))
 			.map((attr) => attr.name);
 	};
 
@@ -192,6 +213,12 @@ export default function UserDetail() {
 		return translatedName;
 	};
 
+	const fullName = user?.firstName || user?.attributes?.fullname?.[0] || "";
+	const email = user?.email?.trim() || "";
+	const personnelSecurityLevel = getSingleAttributeValue(user?.attributes, "personnel_security_level");
+	const department = getSingleAttributeValue(user?.attributes, "department");
+	const position = getSingleAttributeValue(user?.attributes, "position");
+
 	return (
 		<div className="space-y-6">
 			{/* 页面头部 */}
@@ -230,6 +257,14 @@ export default function UserDetail() {
 							<p className="mt-1">{user.username}</p>
 						</div>
 						<div>
+							<span className="text-sm font-medium text-muted-foreground">姓名</span>
+							<p className={`mt-1 text-sm ${fullName ? "" : "text-muted-foreground"}`}>{fullName || "-"}</p>
+						</div>
+						<div>
+							<span className="text-sm font-medium text-muted-foreground">邮箱</span>
+							<p className={`mt-1 text-sm ${email ? "" : "text-muted-foreground"}`}>{email || "-"}</p>
+						</div>
+						<div>
 							<span className="text-sm font-medium text-muted-foreground">状态</span>
 							<div className="mt-1">
 								<Badge variant={user.enabled ? "success" : "destructive"}>{user.enabled ? "启用" : "禁用"}</Badge>
@@ -240,6 +275,24 @@ export default function UserDetail() {
 							<div className="mt-1">
 								<ApprovalStatus userId={user.id || ""} />
 							</div>
+						</div>
+						<div>
+							<span className="text-sm font-medium text-muted-foreground">人员密级</span>
+							<div className="mt-1">
+								{personnelSecurityLevel ? (
+									<Badge variant="outline">{personnelSecurityLevel}</Badge>
+								) : (
+									<span className="text-muted-foreground text-sm">-</span>
+								)}
+							</div>
+						</div>
+						<div>
+							<span className="text-sm font-medium text-muted-foreground">部门</span>
+							<p className={`mt-1 text-sm ${department ? "" : "text-muted-foreground"}`}>{department || "-"}</p>
+						</div>
+						<div>
+							<span className="text-sm font-medium text-muted-foreground">职位</span>
+							<p className={`mt-1 text-sm ${position ? "" : "text-muted-foreground"}`}>{position || "-"}</p>
 						</div>
 
 						{Object.entries(getFilteredUserAttributes()).map(([name, values]) => (

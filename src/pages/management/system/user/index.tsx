@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { KeycloakUser, PaginationParams, UserProfileConfig, UserTableRow } from "#/keycloak";
 import { KeycloakUserProfileService, KeycloakUserService } from "@/api/services/keycloakService";
+import type { CustomUserAttributeKey } from "@/constants/user";
+import { CUSTOM_USER_ATTRIBUTE_KEYS } from "@/constants/user";
 import { Icon } from "@/components/icon";
 import { usePathname, useRouter } from "@/routes/hooks";
 import { Badge } from "@/ui/badge";
@@ -13,6 +15,25 @@ import { Input } from "@/ui/input";
 import ResetPasswordModal from "./reset-password-modal";
 import UserModal from "./user-modal";
 import { t } from "@/locales/i18n";
+
+const RESERVED_PROFILE_ATTRIBUTES = new Set<string>([
+	"username",
+	"email",
+	"firstName",
+	"lastName",
+	"locale",
+	"fullname",
+	...CUSTOM_USER_ATTRIBUTE_KEYS,
+]);
+
+const getSingleAttributeValue = (attributes: Record<string, string[]> | undefined, key: CustomUserAttributeKey) => {
+	const values = attributes?.[key];
+	if (!values || values.length === 0) {
+		return "";
+	}
+	const nonEmpty = values.find((item) => item && item.trim());
+	return nonEmpty ?? values[0] ?? "";
+};
 
 export default function UserPage() {
 	const { push } = useRouter();
@@ -115,11 +136,41 @@ export default function UserPage() {
 						{record.username.charAt(0).toUpperCase()}
 					</div>
 					<div className="ml-3">
-						<div className="font-medium">{record.username}</div>
-						<div className="text-sm text-muted-foreground">{record.email}</div>
+						<div className="font-medium flex flex-wrap items-center gap-2">
+							<span>{record.username}</span>
+							{record.firstName && <span className="text-sm text-muted-foreground">({record.firstName})</span>}
+						</div>
+						<div className="text-sm text-muted-foreground">{record.email?.trim() ? record.email : "未填写邮箱"}</div>
 					</div>
 				</div>
 			),
+		},
+		{
+			title: "人员密级",
+			dataIndex: ["attributes", "personnel_security_level"],
+			width: 140,
+			render: (_: string[] | undefined, record) => {
+				const value = getSingleAttributeValue(record.attributes, "personnel_security_level");
+				return value ? <Badge variant="outline">{value}</Badge> : "-";
+			},
+		},
+		{
+			title: "部门",
+			dataIndex: ["attributes", "department"],
+			width: 180,
+			render: (_: string[] | undefined, record) => {
+				const value = getSingleAttributeValue(record.attributes, "department");
+				return value || "-";
+			},
+		},
+		{
+			title: "职位",
+			dataIndex: ["attributes", "position"],
+			width: 180,
+			render: (_: string[] | undefined, record) => {
+				const value = getSingleAttributeValue(record.attributes, "position");
+				return value || "-";
+			},
 		},
 		{
 			title: "状态",
@@ -133,7 +184,7 @@ export default function UserPage() {
 
 		// 动态添加UserProfile字段列
 		...(userProfileConfig?.attributes
-			?.filter((attr) => !["username", "email", "firstName", "lastName", "locale"].includes(attr.name))
+			?.filter((attr) => !RESERVED_PROFILE_ATTRIBUTES.has(attr.name))
 			.map((attr) => ({
 				title: t(attr.displayName.replace(/\$\{([^}]*)\}/g, "$1")) || attr.name,
 				dataIndex: ["attributes", attr.name],
