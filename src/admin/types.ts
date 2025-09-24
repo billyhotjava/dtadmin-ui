@@ -52,18 +52,33 @@ export interface PortalMenuItem {
 	children?: PortalMenuItem[];
 }
 
+export type OrgDataLevel = "DATA_PUBLIC" | "DATA_INTERNAL" | "DATA_SECRET" | "DATA_TOP_SECRET";
+
 export interface OrganizationNode {
 	id: number;
 	name: string;
-	code: string;
+	dataLevel: OrgDataLevel;
 	parentId?: number | null;
+	contact?: string;
+	phone?: string;
+	description?: string;
+	// legacy fields kept optional for compatibility with draft flows
+	code?: string;
 	leader?: string;
 	memberCount?: number;
-	description?: string;
 	securityDomains?: string[];
 	sensitivity?: string;
 	level?: number;
 	children?: OrganizationNode[];
+}
+
+export interface OrganizationPayload {
+	name: string;
+	dataLevel: OrgDataLevel;
+	parentId?: number | null;
+	contact?: string;
+	phone?: string;
+	description?: string;
 }
 
 export interface AdminUser {
