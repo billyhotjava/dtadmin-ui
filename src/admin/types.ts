@@ -2,9 +2,29 @@ export type AdminRole = "SYSADMIN" | "AUTHADMIN" | "AUDITADMIN";
 
 export interface AdminWhoami {
 	allowed: boolean;
-	role?: AdminRole;
+	role?: string | null;
 	username?: string;
 	email?: string;
+}
+
+export function normalizeAdminRole(role: string | null | undefined): AdminRole | null {
+	if (!role) {
+		return null;
+	}
+	const normalized = role.trim().toUpperCase();
+	switch (normalized) {
+		case "SYSADMIN":
+		case "SYS_ADMIN":
+			return "SYSADMIN";
+		case "AUTHADMIN":
+		case "AUTH_ADMIN":
+			return "AUTHADMIN";
+		case "AUDITADMIN":
+		case "AUDIT_ADMIN":
+			return "AUDITADMIN";
+		default:
+			return null;
+	}
 }
 
 export interface ChangeRequest {
