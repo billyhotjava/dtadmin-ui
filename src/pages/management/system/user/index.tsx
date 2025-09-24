@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { KeycloakUser, PaginationParams, UserProfileConfig, UserTableRow } from "#/keycloak";
 import { KeycloakUserProfileService, KeycloakUserService } from "@/api/services/keycloakService";
+import type { CustomUserAttributeKey } from "@/constants/user";
+import { CUSTOM_USER_ATTRIBUTE_KEYS } from "@/constants/user";
 import { Icon } from "@/components/icon";
 import { PERSON_SECURITY_LEVELS } from "@/constants/governance";
 import { usePathname, useRouter } from "@/routes/hooks";
@@ -29,6 +31,25 @@ const RESERVED_PROFILE_ATTRIBUTE_NAMES = new Set([
 	"person_level",
 	"data_levels",
 ]);
+
+const RESERVED_PROFILE_ATTRIBUTES = new Set<string>([
+	"username",
+	"email",
+	"firstName",
+	"lastName",
+	"locale",
+	"fullname",
+	...CUSTOM_USER_ATTRIBUTE_KEYS,
+]);
+
+const getSingleAttributeValue = (attributes: Record<string, string[]> | undefined, key: CustomUserAttributeKey) => {
+	const values = attributes?.[key];
+	if (!values || values.length === 0) {
+		return "";
+	}
+	const nonEmpty = values.find((item) => item && item.trim());
+	return nonEmpty ?? values[0] ?? "";
+};
 
 export default function UserPage() {
 	const { push } = useRouter();
@@ -140,6 +161,10 @@ export default function UserPage() {
 						{record.username.charAt(0).toUpperCase()}
 					</div>
 					<div className="ml-3">
+						<div className="font-medium flex flex-wrap items-center gap-2">
+							<span>{record.username}</span>
+							{record.firstName && <span className="text-sm text-muted-foreground">({record.firstName})</span>}
+						</div>
 						<div className="font-medium">{record.username}</div>
 						<div className="text-sm text-muted-foreground">{record.email || "未填写邮箱"}</div>
 					</div>
@@ -147,6 +172,11 @@ export default function UserPage() {
 			),
 		},
 		{
+			title: "人员密级",
+			dataIndex: ["attributes", "personnel_security_level"],
+			width: 140,
+			render: (_: string[] | undefined, record) => {
+				const value = getSingleAttributeValue(record.attributes, "personnel_security_level");
 			title: "姓名",
 			dataIndex: "firstName",
 			width: 160,
@@ -160,6 +190,7 @@ export default function UserPage() {
 			dataIndex: ["attributes", "department"],
 			width: 180,
 			render: (_: string[] | undefined, record) => {
+				const value = getSingleAttributeValue(record.attributes, "department");
 				const department = record.attributes?.department?.[0]?.trim();
 				return department && department.length > 0 ? department : "-";
 			},
@@ -169,6 +200,8 @@ export default function UserPage() {
 			dataIndex: ["attributes", "position"],
 			width: 180,
 			render: (_: string[] | undefined, record) => {
+				const value = getSingleAttributeValue(record.attributes, "position");
+				return value || "-";
 				const position = record.attributes?.position?.[0]?.trim();
 				return position && position.length > 0 ? position : "-";
 			},
