@@ -20,6 +20,18 @@ import { keycloakDb } from "../db/keycloak";
 
 const API_PREFIX = "/api/keycloak";
 
+const BUILT_IN_ROLES = new Set([
+	"SYSADMIN",
+	"AUTHADMIN",
+	"AUDITADMIN",
+	"DEPT_OWNER",
+	"DEPT_EDITOR",
+	"DEPT_VIEWER",
+	"INST_OWNER",
+	"INST_EDITOR",
+	"INST_VIEWER",
+]);
+
 const ok = <T>(data: T, message = "success") =>
 	HttpResponse.json({ status: ResultStatus.SUCCESS, message, data } as KeycloakApiResponse<T>);
 
@@ -413,6 +425,9 @@ const keycloakHandlers = [
 		if (keycloakDb.roles.some((role) => role.name === body.name)) {
 			return HttpResponse.json({ status: ResultStatus.ERROR, message: "角色已存在" }, { status: 409 });
 		}
+		if (BUILT_IN_ROLES.has(body.name)) {
+			return HttpResponse.json({ status: ResultStatus.ERROR, message: "内置角色由系统维护" }, { status: 400 });
+		}
 		const role: KeycloakRole = {
 			id: randomId(),
 			name: body.name,
@@ -431,6 +446,9 @@ const keycloakHandlers = [
 		if (index === -1) {
 			return HttpResponse.json({ status: ResultStatus.ERROR, message: "角色不存在" }, { status: 404 });
 		}
+		if (BUILT_IN_ROLES.has(params.name as string)) {
+			return HttpResponse.json({ status: ResultStatus.ERROR, message: "内置角色不可修改" }, { status: 400 });
+		}
 		const payload = (await request.json()) as UpdateRoleRequest;
 		const current = keycloakDb.roles[index];
 		keycloakDb.roles[index] = {
@@ -445,6 +463,9 @@ const keycloakHandlers = [
 		const index = keycloakDb.roles.findIndex((item) => item.name === params.name);
 		if (index === -1) {
 			return HttpResponse.json({ status: ResultStatus.ERROR, message: "角色不存在" }, { status: 404 });
+		}
+		if (BUILT_IN_ROLES.has(params.name as string)) {
+			return HttpResponse.json({ status: ResultStatus.ERROR, message: "内置角色不可删除" }, { status: 400 });
 		}
 		const removed = keycloakDb.roles.splice(index, 1)[0];
 		return ok(removed, "角色已删除");

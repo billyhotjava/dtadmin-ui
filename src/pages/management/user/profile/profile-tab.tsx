@@ -7,6 +7,12 @@ const ROLE_LABEL_MAP: Record<string, string> = {
 	SYSADMIN: "系统管理员",
 	AUTHADMIN: "授权管理员",
 	AUDITADMIN: "安全审计员",
+	DEPT_OWNER: "部门主管",
+	DEPT_EDITOR: "部门数据专员",
+	DEPT_VIEWER: "数据查阅员",
+	INST_OWNER: "研究所领导",
+	INST_EDITOR: "研究所数据专员",
+	INST_VIEWER: "研究所数据查阅员",
 };
 
 function resolveRoleLabels(roles: unknown): string[] {

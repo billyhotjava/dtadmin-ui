@@ -27,6 +27,54 @@ const roles: KeycloakRole[] = [
 		containerId: "realm",
 	},
 	{
+		id: "role-dept-owner",
+		name: "DEPT_OWNER",
+		description: "部门主管，具备本部门数据治理与授权能力",
+		composite: false,
+		clientRole: false,
+		containerId: "realm",
+	},
+	{
+		id: "role-dept-editor",
+		name: "DEPT_EDITOR",
+		description: "部门数据专员，负责本部门数据维护",
+		composite: false,
+		clientRole: false,
+		containerId: "realm",
+	},
+	{
+		id: "role-dept-viewer",
+		name: "DEPT_VIEWER",
+		description: "数据查阅员，只能在本部门查看数据",
+		composite: false,
+		clientRole: false,
+		containerId: "realm",
+	},
+	{
+		id: "role-inst-owner",
+		name: "INST_OWNER",
+		description: "研究所领导，可对全院共享区数据授权",
+		composite: false,
+		clientRole: false,
+		containerId: "realm",
+	},
+	{
+		id: "role-inst-editor",
+		name: "INST_EDITOR",
+		description: "研究所数据专员，维护全院共享区数据",
+		composite: false,
+		clientRole: false,
+		containerId: "realm",
+	},
+	{
+		id: "role-inst-viewer",
+		name: "INST_VIEWER",
+		description: "研究所数据查阅员，可访问全院共享区数据",
+		composite: false,
+		clientRole: false,
+		containerId: "realm",
+	},
+	{
 		id: "role-data-steward",
 		name: "DATA_STEWARD",
 		description: "数据管家，维护数据资产目录",
@@ -70,7 +118,7 @@ const users: KeycloakUser[] = [
 			data_levels: ["PUBLIC", "INTERNAL"],
 		},
 		groups: ["市场洞察组"],
-		realmRoles: ["DATA_STEWARD"],
+		realmRoles: ["DATA_STEWARD", "DEPT_VIEWER"],
 		createdTimestamp: Date.parse("2024-02-28T10:20:00Z"),
 	},
 	{
@@ -106,8 +154,44 @@ const users: KeycloakUser[] = [
 			data_levels: ["PUBLIC"],
 		},
 		groups: ["数据治理小组"],
-		realmRoles: ["DATA_STEWARD", "AUTHADMIN"],
+		realmRoles: ["DATA_STEWARD", "AUTHADMIN", "DEPT_EDITOR"],
 		createdTimestamp: Date.parse("2023-12-02T04:15:00Z"),
+	},
+	{
+		id: "user-lu-qi",
+		username: "luqi",
+		email: "lu.qi@demo.cn",
+		firstName: "卢琦",
+		enabled: true,
+		attributes: {
+			department: ["数据平台组"],
+			position: ["部门主管"],
+			personnel_security_level: ["IMPORTANT"],
+			person_security_level: ["IMPORTANT"],
+			person_level: ["IMPORTANT"],
+			data_levels: ["PUBLIC", "INTERNAL", "SECRET"],
+		},
+		groups: ["数据平台组"],
+		realmRoles: ["DEPT_OWNER"],
+		createdTimestamp: Date.parse("2024-04-12T02:40:00Z"),
+	},
+	{
+		id: "user-jiang-hui",
+		username: "jianghui",
+		email: "jiang.hui@demo.cn",
+		firstName: "姜辉",
+		enabled: true,
+		attributes: {
+			department: ["研究所共享区"],
+			position: ["数据专员"],
+			personnel_security_level: ["CORE"],
+			person_security_level: ["CORE"],
+			person_level: ["CORE"],
+			data_levels: ["PUBLIC", "INTERNAL", "SECRET", "TOP_SECRET"],
+		},
+		groups: ["AI创新组"],
+		realmRoles: ["INST_OWNER"],
+		createdTimestamp: Date.parse("2024-03-02T03:30:00Z"),
 	},
 ];
 
@@ -136,9 +220,9 @@ const groups: KeycloakGroup[] = [
 ];
 
 const groupMembers: Record<string, string[]> = {
-	"group-data-platform": ["user-zhang-wei", "user-li-xiaomei"],
+	"group-data-platform": ["user-zhang-wei", "user-li-xiaomei", "user-lu-qi"],
 	"group-data-governance": ["user-chen-yu"],
-	"group-ai-innovation": ["user-wang-hong"],
+	"group-ai-innovation": ["user-wang-hong", "user-jiang-hui"],
 };
 
 export const keycloakDb: {
