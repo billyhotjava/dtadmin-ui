@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui/card";
 import { Input } from "@/ui/input";
 import { Text } from "@/ui/typography";
+import { toast } from "sonner";
 
 interface AuditLogEntry {
 	id: string;
@@ -264,6 +265,7 @@ const auditLogSamples: AuditLogEntry[] = [
 
 export default function AuditCenterView() {
 	const [filters, setFilters] = useState<FilterState>({});
+	const [exporting, setExporting] = useState(false);
 
 	const moduleOptions = useMemo(() => {
 		return Array.from(new Set(auditLogSamples.map((item) => item.module)));
@@ -294,6 +296,28 @@ export default function AuditCenterView() {
 			return true;
 		});
 	}, [filters]);
+
+	const handleExport = useCallback(() => {
+		if (filteredLogs.length === 0) {
+			toast.error("当前条件下没有可导出的日志记录");
+			return;
+		}
+		setExporting(true);
+		window.setTimeout(() => {
+			const csv = buildCsvContent(filteredLogs, filters);
+			const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+			const url = URL.createObjectURL(blob);
+			const link = document.createElement("a");
+			link.href = url;
+			link.download = `audit-logs-${Date.now()}.csv`;
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+			URL.revokeObjectURL(url);
+			toast.success("已导出筛选后的审计日志");
+			setExporting(false);
+		}, 600);
+	}, [filteredLogs, filters]);
 
 	return (
 		<div className="space-y-6">
@@ -368,11 +392,16 @@ export default function AuditCenterView() {
 			</Card>
 
 			<Card>
-				<CardHeader className="space-y-2">
-					<CardTitle>日志记录</CardTitle>
-					<Text variant="body3" className="text-muted-foreground">
-						当前展示 {filteredLogs.length} / {auditLogSamples.length} 条记录。
-					</Text>
+				<CardHeader className="space-y-2 sm:flex sm:items-center sm:justify-between sm:space-y-0">
+					<div>
+						<CardTitle>日志记录</CardTitle>
+						<Text variant="body3" className="text-muted-foreground">
+							当前展示 {filteredLogs.length} / {auditLogSamples.length} 条记录。
+						</Text>
+					</div>
+					<Button type="button" onClick={handleExport} disabled={exporting}>
+						{exporting ? "正在导出..." : "导出日志"}
+					</Button>
 				</CardHeader>
 				<CardContent className="overflow-x-auto">
 					<table className="min-w-full table-fixed text-sm">
@@ -435,6 +464,40 @@ function formatOperatorName(value: string) {
 	const label = OPERATOR_LABEL_MAP[value as keyof typeof OPERATOR_LABEL_MAP];
 	if (label) {
 		return `${label}（${value}）`;
+	}
+	return value;
+}
+
+function buildCsvContent(logs: AuditLogEntry[], filters: FilterState) {
+	const lines: string[] = [];
+	const exportedAt = formatDateTime(new Date().toISOString());
+	const filterSummary = `时间范围：${
+		filters.from ? `${formatDateTime(filters.from)} 起` : "全部"
+	} → ${filters.to ? `${formatDateTime(filters.to)} 止` : "全部"}；模块：${filters.module ?? "全部"}`;
+	lines.push(`# 导出时间：${exportedAt}`);
+	lines.push(`# 筛选条件：${filterSummary}`);
+	lines.push("");
+	lines.push("日志编号,操作时间,功能模块,操作详情,操作者,IP,结果,说明");
+	for (const log of logs) {
+		lines.push(
+			[
+				csvEscape(log.id),
+				csvEscape(formatDateTime(log.timestamp)),
+				csvEscape(log.module),
+				csvEscape(log.action),
+				csvEscape(formatOperatorName(log.operator)),
+				csvEscape(log.ip),
+				csvEscape(log.result),
+				csvEscape(log.detail),
+			].join(","),
+		);
+	}
+	return lines.join("\n");
+}
+
+function csvEscape(value: string) {
+	if (value.includes('"') || value.includes(",") || value.includes("\n")) {
+		return `"${value.replace(/"/g, '""')}"`;
 	}
 	return value;
 }

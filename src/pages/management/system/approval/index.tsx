@@ -1,10 +1,12 @@
 import { Button, Input, Modal, Table, Tag, Tooltip } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { ApprovalRequest, ApprovalRequestDetail, KeycloakUser } from "#/keycloak";
 import { KeycloakApprovalService } from "@/api/services/approvalService";
 import useUserStore from "@/store/userStore";
+import { useUserRoles } from "@/store/userStore";
+import ApprovalCenterView from "@/admin/views/approval-center";
 import { Badge } from "@/ui/badge";
 import { Card, CardContent, CardHeader } from "@/ui/card";
 import { Text } from "@/ui/typography";
@@ -31,9 +33,31 @@ export default function ApprovalPage() {
 	const [userInfoChange, setUserInfoChange] = useState<UserInfoChange | null>(null); // 用于存储用户信息变更详情
 
 	const { userInfo } = useUserStore();
+	const roles = useUserRoles();
+	const isAuthAdmin = useMemo(() => {
+		return roles.some((role) => {
+			if (typeof role === "string") {
+				return role.toUpperCase() === "AUTHADMIN";
+			}
+			if (role && typeof role === "object") {
+				const objectRole = role as { name?: unknown; code?: unknown };
+				const candidate =
+					typeof objectRole.name === "string"
+						? objectRole.name
+						: typeof objectRole.code === "string"
+							? objectRole.code
+							: null;
+				return candidate?.toUpperCase() === "AUTHADMIN";
+			}
+			return false;
+		});
+	}, [roles]);
 
 	// 加载审批请求列表
 	const loadApprovals = useCallback(async () => {
+		if (isAuthAdmin) {
+			return;
+		}
 		setLoading(true);
 		try {
 			// 后端列表接口只返回基本审批信息，不包含items字段
@@ -45,7 +69,7 @@ export default function ApprovalPage() {
 		} finally {
 			setLoading(false);
 		}
-	}, []);
+	}, [isAuthAdmin]);
 
 	// 解析用户信息变更详情
 	const parseUserInfoChange = (request: ApprovalRequestDetail): UserInfoChange | null => {
@@ -311,8 +335,13 @@ export default function ApprovalPage() {
 
 	// 初始化加载
 	useEffect(() => {
+		if (isAuthAdmin) return;
 		loadApprovals();
-	}, [loadApprovals]);
+	}, [isAuthAdmin, loadApprovals]);
+
+	if (isAuthAdmin) {
+		return <ApprovalCenterView />;
+	}
 
 	return (
 		<div className="space-y-4">

@@ -1,4 +1,4 @@
-import { Button, DatePicker, Form, Input, Modal, Select, Space, Table, Tag, Tooltip } from "antd";
+import { Button, DatePicker, Form, Input, Modal, Select, Space, Table, Tag, Tooltip, message } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
@@ -46,6 +46,7 @@ export default function AuditLogPage() {
 	const [filteredLogs, setFilteredLogs] = useState<AuditLog[]>(() => SAMPLE_AUDIT_LOGS);
 	const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
 	const [detailModalVisible, setDetailModalVisible] = useState(false);
+	const [exporting, setExporting] = useState(false);
 
 	const moduleOptions = useMemo(
 		() =>
@@ -109,6 +110,29 @@ export default function AuditLogPage() {
 		form.resetFields();
 		applyFilters({});
 	}, [applyFilters, form]);
+
+	const handleExport = useCallback(() => {
+		if (filteredLogs.length === 0) {
+			message.warning("当前筛选条件下没有可导出的日志");
+			return;
+		}
+		setExporting(true);
+		const filters = form.getFieldsValue();
+		window.setTimeout(() => {
+			const csv = buildCsvContent(filteredLogs, filters);
+			const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+			const url = URL.createObjectURL(blob);
+			const anchor = document.createElement("a");
+			anchor.href = url;
+			anchor.download = `audit-logs-${Date.now()}.csv`;
+			document.body.appendChild(anchor);
+			anchor.click();
+			document.body.removeChild(anchor);
+			URL.revokeObjectURL(url);
+			message.success("已导出审计日志 CSV 文件");
+			setExporting(false);
+		}, 400);
+	}, [filteredLogs, form]);
 
 	const handleViewDetail = useCallback((record: AuditLog) => {
 		setSelectedLog(record);
@@ -237,6 +261,9 @@ export default function AuditLogPage() {
 									查询
 								</Button>
 								<Button onClick={handleReset}>重置</Button>
+								<Button onClick={handleExport} loading={exporting}>
+									导出日志
+								</Button>
 							</Space>
 						</Form.Item>
 					</Form>
@@ -337,4 +364,43 @@ export default function AuditLogPage() {
 			</Modal>
 		</div>
 	);
+}
+
+function buildCsvContent(logs: AuditLog[], filters: AuditLogFilters) {
+	const lines: string[] = [];
+	const now = dayjs().format("YYYY-MM-DD HH:mm:ss");
+	const [start, end] = filters.dateRange ?? [];
+	const module = filters.module ?? "全部";
+	const ip = filters.ip ?? "全部";
+	lines.push(`# 导出时间：${now}`);
+	lines.push(
+		`# 筛选条件：起始=${start ? start.format("YYYY-MM-DD HH:mm") : "全部"} → ${
+			end ? end.format("YYYY-MM-DD HH:mm") : "全部"
+		}, 模块=${module}, IP=${ip}`,
+	);
+	lines.push("");
+	lines.push("ID,功能模块,操作类型,目标,操作者,IP地址,创建时间,结果,内容");
+	for (const log of logs) {
+		lines.push(
+			[
+				csvEscape(`#${log.id}`),
+				csvEscape(log.module),
+				csvEscape(resolveActionMeta(log.action).label),
+				csvEscape(log.target || "-"),
+				csvEscape(log.actor),
+				csvEscape(log.ip),
+				csvEscape(dayjs(log.at).format("YYYY-MM-DD HH:mm:ss")),
+				csvEscape(log.result ?? "-"),
+				csvEscape(log.details ?? ""),
+			].join(","),
+		);
+	}
+	return lines.join("\n");
+}
+
+function csvEscape(value: string) {
+	if (value.includes('"') || value.includes(",") || value.includes("\n")) {
+		return `"${value.replace(/"/g, '""')}"`;
+	}
+	return value;
 }

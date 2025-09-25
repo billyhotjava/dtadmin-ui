@@ -10,6 +10,8 @@ import { Label } from "@/ui/label";
 import { ScrollArea } from "@/ui/scroll-area";
 import { Text } from "@/ui/typography";
 
+const LOCKED_ADMIN_ROLES = new Set(["SYSADMIN", "AUTHADMIN", "AUDITADMIN"]);
+
 interface RoleAssignModalProps {
 	open: boolean;
 	role?: KeycloakRole;
@@ -23,6 +25,9 @@ export default function RoleAssignModal({ open, role, onCancel, onSuccess }: Rol
 	const [submitting, setSubmitting] = useState(false);
 	const [search, setSearch] = useState("");
 	const [selectedUserId, setSelectedUserId] = useState<string>("");
+
+	const normalizedRoleName = role?.name?.trim().toUpperCase() ?? "";
+	const lockedAdminRole = LOCKED_ADMIN_ROLES.has(normalizedRoleName);
 
 	const loadUsers = useCallback(async () => {
 		setLoading(true);
@@ -41,10 +46,15 @@ export default function RoleAssignModal({ open, role, onCancel, onSuccess }: Rol
 		if (!open) {
 			return;
 		}
+		if (lockedAdminRole) {
+			toast.warning("内置管理员角色由平台维护，不支持在线分配成员");
+			onCancel();
+			return;
+		}
 		setSearch("");
 		setSelectedUserId("");
 		void loadUsers();
-	}, [loadUsers, open]);
+	}, [loadUsers, lockedAdminRole, onCancel, open]);
 
 	const filteredUsers = useMemo(() => {
 		if (!search.trim()) {
@@ -66,6 +76,10 @@ export default function RoleAssignModal({ open, role, onCancel, onSuccess }: Rol
 	const handleAssign = async () => {
 		if (!role?.name) {
 			toast.error("角色信息缺失，无法分配");
+			return;
+		}
+		if (lockedAdminRole) {
+			toast.warning("内置管理员角色不支持在线分配");
 			return;
 		}
 		if (!selectedUser) {
@@ -92,6 +106,10 @@ export default function RoleAssignModal({ open, role, onCancel, onSuccess }: Rol
 			onCancel();
 		}
 	};
+
+	if (lockedAdminRole) {
+		return null;
+	}
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>

@@ -116,6 +116,17 @@ const DATA_ORDER: Record<OrgDataLevel, number> = {
 	DATA_TOP_SECRET: 3,
 };
 
+const LOCKED_ADMIN_ROLES = new Set(["SYSADMIN", "AUTHADMIN", "AUDITADMIN"]);
+
+function getRoleDisplayName(role: Pick<AdminRoleDetail, "name" | "description">) {
+	const description = role.description?.trim();
+	if (!description) {
+		return role.name;
+	}
+	const [firstClause] = description.split(/[，,。.;；]/);
+	return firstClause?.trim() ? firstClause.trim() : description;
+}
+
 interface CustomRoleFormState {
 	name: string;
 	scope: "DEPARTMENT" | "INSTITUTE";
@@ -186,6 +197,8 @@ export default function RoleManagementView() {
 	}, [roles, selectedId]);
 
 	const selected = useMemo(() => roles.find((role) => role.id === selectedId) ?? null, [roles, selectedId]);
+	const selectedDisplayName = selected ? getRoleDisplayName(selected) : "";
+	const isLockedAdmin = selected ? LOCKED_ADMIN_ROLES.has(selected.name.trim().toUpperCase()) : false;
 
 	const datasetMap = useMemo(() => new Map(datasets.map((item) => [item.id, item])), [datasets]);
 
@@ -268,14 +281,18 @@ export default function RoleManagementView() {
 	}, [datasets, assignmentRoleScope, assignmentScopeOrgId]);
 
 	const assignmentRoleOptions = useMemo(() => {
-		const builtIn = BUILT_IN_DATA_ROLES.map((role) => ({
-			value: role.name,
-			label: role.label,
-		}));
-		const custom = customRoles.map((role) => ({
-			value: role.name,
-			label: role.name,
-		}));
+		const builtIn = BUILT_IN_DATA_ROLES.filter((role) => !LOCKED_ADMIN_ROLES.has(role.name.trim().toUpperCase())).map(
+			(role) => ({
+				value: role.name,
+				label: role.label,
+			}),
+		);
+		const custom = customRoles
+			.filter((role) => !LOCKED_ADMIN_ROLES.has(role.name.trim().toUpperCase()))
+			.map((role) => ({
+				value: role.name,
+				label: role.name,
+			}));
 		return [...builtIn, ...custom];
 	}, [customRoles]);
 
@@ -372,6 +389,11 @@ export default function RoleManagementView() {
 			toast.error("请选择角色");
 			return;
 		}
+		const normalizedAssignmentRole = assignmentForm.role.trim().toUpperCase();
+		if (LOCKED_ADMIN_ROLES.has(normalizedAssignmentRole)) {
+			toast.error("该管理员角色由系统维护，无法在此分配成员");
+			return;
+		}
 		if (!assignmentForm.username.trim() || !assignmentForm.displayName.trim()) {
 			toast.error("请填写用户与显示名称");
 			return;
@@ -421,6 +443,9 @@ export default function RoleManagementView() {
 					<ul className="space-y-2">
 						{roles.map((role) => {
 							const isActive = role.id === selectedId;
+							const normalizedRoleName = role.name.trim().toUpperCase();
+							const displayName = getRoleDisplayName(role);
+							const locked = LOCKED_ADMIN_ROLES.has(normalizedRoleName);
 							return (
 								<li key={role.id}>
 									<button
@@ -431,11 +456,18 @@ export default function RoleManagementView() {
 										}`}
 									>
 										<div className="flex items-center justify-between gap-2">
-											<span className="font-medium">{role.name}</span>
+											<div className="flex items-center gap-2">
+												<span className="font-mono text-xs text-muted-foreground">#{role.id}</span>
+												<span className="font-medium">{displayName}</span>
+												{locked ? <Badge variant="secondary">系统预置</Badge> : null}
+											</div>
 											<Badge variant="outline">{role.securityLevel}</Badge>
 										</div>
 										<Text variant="body3" className="text-muted-foreground">
 											{role.description || "--"}
+										</Text>
+										<Text variant="body3" className="text-muted-foreground">
+											标识：{role.name}
 										</Text>
 										<div className="mt-1 flex flex-wrap gap-1">
 											<Badge variant="secondary">成员：{role.memberCount}</Badge>
@@ -457,13 +489,23 @@ export default function RoleManagementView() {
 					<CardContent className="space-y-4 text-sm">
 						{selected ? (
 							<>
-								<div>
-									<Text variant="body2" className="font-semibold">
-										{selected.name}
+								<div className="space-y-1">
+									<div className="flex items-center gap-2">
+										<span className="font-mono text-xs text-muted-foreground">#{selected.id}</span>
+										<span className="text-sm font-semibold">{selectedDisplayName || selected.name}</span>
+										{isLockedAdmin ? <Badge variant="secondary">系统预置</Badge> : null}
+									</div>
+									<Text variant="body3" className="text-muted-foreground">
+										标识：{selected.name}
 									</Text>
 									<Text variant="body3" className="text-muted-foreground">
 										安全级别：{selected.securityLevel}
 									</Text>
+									{isLockedAdmin ? (
+										<Text variant="body3" className="text-amber-500">
+											内置管理员角色仅由平台维护，不支持在线修改或成员管理。
+										</Text>
+									) : null}
 								</div>
 								{selected.description ? <p className="text-muted-foreground">{selected.description}</p> : null}
 								<div className="space-y-2">
@@ -765,254 +807,267 @@ export default function RoleManagementView() {
 					</CardContent>
 				</Card>
 
-				<Card>
-					<CardHeader>
-						<CardTitle>角色分配</CardTitle>
-						<Text variant="body3" className="text-muted-foreground">
-							授权需绑定用户与作用域（Org ID 或留空表示全院共享区）。
-						</Text>
-					</CardHeader>
-					<CardContent className="space-y-6 text-sm">
-						<form className="space-y-4" onSubmit={handleCreateAssignment}>
-							<div className="grid gap-4 md:grid-cols-2">
+				{isLockedAdmin ? (
+					<Card>
+						<CardHeader>
+							<CardTitle>角色分配</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-4 text-sm">
+							<Text variant="body3" className="text-muted-foreground">
+								内置管理员角色的成员与权限由平台策略统一维护，如需调整请通过工单或变更流程处理。
+							</Text>
+						</CardContent>
+					</Card>
+				) : (
+					<Card>
+						<CardHeader>
+							<CardTitle>角色分配</CardTitle>
+							<Text variant="body3" className="text-muted-foreground">
+								授权需绑定用户与作用域（Org ID 或留空表示全院共享区）。
+							</Text>
+						</CardHeader>
+						<CardContent className="space-y-6 text-sm">
+							<form className="space-y-4" onSubmit={handleCreateAssignment}>
+								<div className="grid gap-4 md:grid-cols-2">
+									<div className="space-y-2">
+										<Label htmlFor="assignment-role">角色</Label>
+										<select
+											id="assignment-role"
+											className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+											value={assignmentForm.role}
+											onChange={(event) =>
+												setAssignmentForm((prev) => ({
+													...prev,
+													role: event.target.value,
+													operations: new Set<DataOperation>(["read"]),
+													datasetIds: new Set<number>(),
+												}))
+											}
+										>
+											<option value="">请选择角色</option>
+											{assignmentRoleOptions.map((option) => (
+												<option key={option.value} value={option.value}>
+													{option.label}
+												</option>
+											))}
+										</select>
+									</div>
+									<div className="space-y-2">
+										<Label htmlFor="assignment-security">用户密级</Label>
+										<select
+											id="assignment-security"
+											className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+											value={assignmentForm.userSecurityLevel}
+											onChange={(event) =>
+												setAssignmentForm((prev) => ({
+													...prev,
+													userSecurityLevel: event.target.value as SecurityLevel,
+												}))
+											}
+										>
+											{(Object.keys(SECURITY_LEVEL_LABELS) as SecurityLevel[]).map((level) => (
+												<option key={level} value={level}>
+													{SECURITY_LEVEL_LABELS[level]}
+												</option>
+											))}
+										</select>
+									</div>
+								</div>
+								<div className="grid gap-4 md:grid-cols-2">
+									<div className="space-y-2">
+										<Label htmlFor="assignment-username">用户名</Label>
+										<Input
+											id="assignment-username"
+											placeholder="zhangwei"
+											value={assignmentForm.username}
+											onChange={(event) =>
+												setAssignmentForm((prev) => ({
+													...prev,
+													username: event.target.value,
+												}))
+											}
+										/>
+									</div>
+									<div className="space-y-2">
+										<Label htmlFor="assignment-display">显示名称</Label>
+										<Input
+											id="assignment-display"
+											placeholder="张伟"
+											value={assignmentForm.displayName}
+											onChange={(event) =>
+												setAssignmentForm((prev) => ({
+													...prev,
+													displayName: event.target.value,
+												}))
+											}
+										/>
+									</div>
+								</div>
 								<div className="space-y-2">
-									<Label htmlFor="assignment-role">角色</Label>
+									<Label htmlFor="assignment-scope">授权作用域</Label>
 									<select
-										id="assignment-role"
+										id="assignment-scope"
 										className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-										value={assignmentForm.role}
+										value={assignmentForm.scopeOrgId}
+										disabled={assignmentRoleScope === "INSTITUTE"}
 										onChange={(event) =>
 											setAssignmentForm((prev) => ({
 												...prev,
-												role: event.target.value,
-												operations: new Set<DataOperation>(["read"]),
-												datasetIds: new Set<number>(),
+												scopeOrgId: event.target.value,
 											}))
 										}
 									>
-										<option value="">请选择角色</option>
-										{assignmentRoleOptions.map((option) => (
+										<option value="">全院共享区</option>
+										{orgOptions.map((option) => (
 											<option key={option.value} value={option.value}>
 												{option.label}
 											</option>
 										))}
 									</select>
+									{assignmentRoleScope === "INSTITUTE" ? (
+										<Text variant="body3" className="text-muted-foreground">
+											全院类角色默认作用于共享区数据。
+										</Text>
+									) : null}
 								</div>
 								<div className="space-y-2">
-									<Label htmlFor="assignment-security">用户密级</Label>
-									<select
-										id="assignment-security"
-										className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-										value={assignmentForm.userSecurityLevel}
-										onChange={(event) =>
-											setAssignmentForm((prev) => ({
-												...prev,
-												userSecurityLevel: event.target.value as SecurityLevel,
-											}))
-										}
-									>
-										{(Object.keys(SECURITY_LEVEL_LABELS) as SecurityLevel[]).map((level) => (
-											<option key={level} value={level}>
-												{SECURITY_LEVEL_LABELS[level]}
-											</option>
-										))}
-									</select>
+									<Label>授权数据集</Label>
+									{filteredDatasets.length === 0 ? (
+										<Text variant="body3" className="text-muted-foreground">
+											当前筛选条件下暂无可授权数据集。
+										</Text>
+									) : (
+										<div className="grid gap-2 md:grid-cols-2">
+											{filteredDatasets.map((dataset) => {
+												const checked = assignmentForm.datasetIds.has(dataset.id);
+												return (
+													<label key={dataset.id} className="flex items-start gap-2 rounded-md border p-2 text-sm">
+														<Checkbox
+															checked={checked}
+															onCheckedChange={(value) =>
+																setAssignmentForm((prev) => {
+																	const next = new Set(prev.datasetIds);
+																	if (value) {
+																		next.add(dataset.id);
+																	} else {
+																		next.delete(dataset.id);
+																	}
+																	return { ...prev, datasetIds: next };
+																})
+															}
+														/>
+														<span>
+															<span className="font-medium">{dataset.businessCode}</span>
+															<Text variant="body3" className="text-muted-foreground">
+																{dataset.ownerOrgName} · {DATA_LEVEL_LABELS[dataset.dataLevel]}
+																{dataset.isInstituteShared ? " · 全院共享" : ""}
+															</Text>
+														</span>
+													</label>
+												);
+											})}
+										</div>
+									)}
 								</div>
-							</div>
-							<div className="grid gap-4 md:grid-cols-2">
 								<div className="space-y-2">
-									<Label htmlFor="assignment-username">用户名</Label>
-									<Input
-										id="assignment-username"
-										placeholder="zhangwei"
-										value={assignmentForm.username}
-										onChange={(event) =>
-											setAssignmentForm((prev) => ({
-												...prev,
-												username: event.target.value,
-											}))
-										}
-									/>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="assignment-display">显示名称</Label>
-									<Input
-										id="assignment-display"
-										placeholder="张伟"
-										value={assignmentForm.displayName}
-										onChange={(event) =>
-											setAssignmentForm((prev) => ({
-												...prev,
-												displayName: event.target.value,
-											}))
-										}
-									/>
-								</div>
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="assignment-scope">授权作用域</Label>
-								<select
-									id="assignment-scope"
-									className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-									value={assignmentForm.scopeOrgId}
-									disabled={assignmentRoleScope === "INSTITUTE"}
-									onChange={(event) =>
-										setAssignmentForm((prev) => ({
-											...prev,
-											scopeOrgId: event.target.value,
-										}))
-									}
-								>
-									<option value="">全院共享区</option>
-									{orgOptions.map((option) => (
-										<option key={option.value} value={option.value}>
-											{option.label}
-										</option>
-									))}
-								</select>
-								{assignmentRoleScope === "INSTITUTE" ? (
-									<Text variant="body3" className="text-muted-foreground">
-										全院类角色默认作用于共享区数据。
-									</Text>
-								) : null}
-							</div>
-							<div className="space-y-2">
-								<Label>授权数据集</Label>
-								{filteredDatasets.length === 0 ? (
-									<Text variant="body3" className="text-muted-foreground">
-										当前筛选条件下暂无可授权数据集。
-									</Text>
-								) : (
-									<div className="grid gap-2 md:grid-cols-2">
-										{filteredDatasets.map((dataset) => {
-											const checked = assignmentForm.datasetIds.has(dataset.id);
+									<Label>授权操作</Label>
+									<div className="flex flex-wrap gap-4">
+										{availableOperations.map((operation) => {
+											const checked = assignmentForm.operations.has(operation);
 											return (
-												<label key={dataset.id} className="flex items-start gap-2 rounded-md border p-2 text-sm">
+												<label key={operation} className="flex items-center gap-2 text-sm">
 													<Checkbox
 														checked={checked}
 														onCheckedChange={(value) =>
 															setAssignmentForm((prev) => {
-																const next = new Set(prev.datasetIds);
+																const next = new Set(prev.operations);
 																if (value) {
-																	next.add(dataset.id);
+																	next.add(operation);
 																} else {
-																	next.delete(dataset.id);
+																	next.delete(operation);
 																}
-																return { ...prev, datasetIds: next };
+																if (next.size === 0) {
+																	next.add(operation);
+																}
+																return { ...prev, operations: next };
 															})
 														}
 													/>
-													<span>
-														<span className="font-medium">{dataset.businessCode}</span>
-														<Text variant="body3" className="text-muted-foreground">
-															{dataset.ownerOrgName} · {DATA_LEVEL_LABELS[dataset.dataLevel]}
-															{dataset.isInstituteShared ? " · 全院共享" : ""}
-														</Text>
-													</span>
+													{OPERATION_LABELS[operation]}
 												</label>
 											);
 										})}
 									</div>
+								</div>
+								<Button type="submit">提交授权</Button>
+							</form>
+
+							<div className="space-y-3">
+								<Text variant="body3" className="font-semibold">
+									授权记录
+								</Text>
+								{assignments.length === 0 ? (
+									<Text variant="body3" className="text-muted-foreground">
+										暂无授权记录。
+									</Text>
+								) : (
+									<div className="overflow-x-auto">
+										<table className="min-w-full text-left text-sm">
+											<thead className="text-muted-foreground">
+												<tr>
+													<th className="px-3 py-2 font-medium">用户</th>
+													<th className="px-3 py-2 font-medium">角色</th>
+													<th className="px-3 py-2 font-medium">作用域</th>
+													<th className="px-3 py-2 font-medium">数据集</th>
+													<th className="px-3 py-2 font-medium">操作</th>
+													<th className="px-3 py-2 font-medium">授权时间</th>
+												</tr>
+											</thead>
+											<tbody>
+												{assignments.map((assignment) => (
+													<tr key={assignment.id} className="border-b last:border-b-0">
+														<td className="px-3 py-2">
+															<div className="flex flex-col">
+																<span className="font-medium">{assignment.displayName}</span>
+																<Text variant="body3" className="text-muted-foreground">
+																	{assignment.username} · {SECURITY_LEVEL_LABELS[assignment.userSecurityLevel]}
+																</Text>
+															</div>
+														</td>
+														<td className="px-3 py-2">{roleLabelMap[assignment.role] ?? assignment.role}</td>
+														<td className="px-3 py-2">{assignment.scopeOrgName}</td>
+														<td className="px-3 py-2">
+															<div className="flex flex-wrap gap-1">
+																{assignment.datasetIds.map((id) => {
+																	const dataset = datasetMap.get(id);
+																	return (
+																		<Badge key={id} variant="outline">
+																			{dataset?.businessCode ?? id}
+																		</Badge>
+																	);
+																})}
+															</div>
+														</td>
+														<td className="px-3 py-2">
+															<div className="flex flex-wrap gap-1">
+																{assignment.operations.map((operation) => (
+																	<Badge key={operation} variant="secondary">
+																		{OPERATION_LABELS[operation]}
+																	</Badge>
+																))}
+															</div>
+														</td>
+														<td className="px-3 py-2 text-muted-foreground">{assignment.grantedAt}</td>
+													</tr>
+												))}
+											</tbody>
+										</table>
+									</div>
 								)}
 							</div>
-							<div className="space-y-2">
-								<Label>授权操作</Label>
-								<div className="flex flex-wrap gap-4">
-									{availableOperations.map((operation) => {
-										const checked = assignmentForm.operations.has(operation);
-										return (
-											<label key={operation} className="flex items-center gap-2 text-sm">
-												<Checkbox
-													checked={checked}
-													onCheckedChange={(value) =>
-														setAssignmentForm((prev) => {
-															const next = new Set(prev.operations);
-															if (value) {
-																next.add(operation);
-															} else {
-																next.delete(operation);
-															}
-															if (next.size === 0) {
-																next.add(operation);
-															}
-															return { ...prev, operations: next };
-														})
-													}
-												/>
-												{OPERATION_LABELS[operation]}
-											</label>
-										);
-									})}
-								</div>
-							</div>
-							<Button type="submit">提交授权</Button>
-						</form>
-
-						<div className="space-y-3">
-							<Text variant="body3" className="font-semibold">
-								授权记录
-							</Text>
-							{assignments.length === 0 ? (
-								<Text variant="body3" className="text-muted-foreground">
-									暂无授权记录。
-								</Text>
-							) : (
-								<div className="overflow-x-auto">
-									<table className="min-w-full text-left text-sm">
-										<thead className="text-muted-foreground">
-											<tr>
-												<th className="px-3 py-2 font-medium">用户</th>
-												<th className="px-3 py-2 font-medium">角色</th>
-												<th className="px-3 py-2 font-medium">作用域</th>
-												<th className="px-3 py-2 font-medium">数据集</th>
-												<th className="px-3 py-2 font-medium">操作</th>
-												<th className="px-3 py-2 font-medium">授权时间</th>
-											</tr>
-										</thead>
-										<tbody>
-											{assignments.map((assignment) => (
-												<tr key={assignment.id} className="border-b last:border-b-0">
-													<td className="px-3 py-2">
-														<div className="flex flex-col">
-															<span className="font-medium">{assignment.displayName}</span>
-															<Text variant="body3" className="text-muted-foreground">
-																{assignment.username} · {SECURITY_LEVEL_LABELS[assignment.userSecurityLevel]}
-															</Text>
-														</div>
-													</td>
-													<td className="px-3 py-2">{roleLabelMap[assignment.role] ?? assignment.role}</td>
-													<td className="px-3 py-2">{assignment.scopeOrgName}</td>
-													<td className="px-3 py-2">
-														<div className="flex flex-wrap gap-1">
-															{assignment.datasetIds.map((id) => {
-																const dataset = datasetMap.get(id);
-																return (
-																	<Badge key={id} variant="outline">
-																		{dataset?.businessCode ?? id}
-																	</Badge>
-																);
-															})}
-														</div>
-													</td>
-													<td className="px-3 py-2">
-														<div className="flex flex-wrap gap-1">
-															{assignment.operations.map((operation) => (
-																<Badge key={operation} variant="secondary">
-																	{OPERATION_LABELS[operation]}
-																</Badge>
-															))}
-														</div>
-													</td>
-													<td className="px-3 py-2 text-muted-foreground">{assignment.grantedAt}</td>
-												</tr>
-											))}
-										</tbody>
-									</table>
-								</div>
-							)}
-						</div>
-					</CardContent>
-				</Card>
+						</CardContent>
+					</Card>
+				)}
 
 				<Card>
 					<CardHeader>
@@ -1127,7 +1182,13 @@ export default function RoleManagementView() {
 						<CardTitle>发起角色变更</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<ChangeRequestForm initialTab="role" />
+						{isLockedAdmin ? (
+							<Text variant="body3" className="text-muted-foreground">
+								内置管理员角色变更需通过线下审批或专用流程提交，请联系系统管理员。
+							</Text>
+						) : (
+							<ChangeRequestForm initialTab="role" />
+						)}
 					</CardContent>
 				</Card>
 			</div>

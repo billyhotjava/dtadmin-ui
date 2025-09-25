@@ -66,7 +66,7 @@ export default function RolePage() {
 
 	// 删除角色
 	const handleDelete = (role: KeycloakRole) => {
-		if (role.name && BUILT_IN_ROLE_NAMES.has(role.name)) {
+		if (role.name && BUILT_IN_ROLE_NAMES.has(role.name.trim().toUpperCase())) {
 			toast.warning("内置角色不可删除");
 			return;
 		}
@@ -97,7 +97,8 @@ export default function RolePage() {
 			dataIndex: "name",
 			width: 200,
 			render: (name: string, record) => {
-				const builtIn = BUILT_IN_ROLE_NAMES.has(name);
+				const normalizedName = name.trim().toUpperCase();
+				const builtIn = BUILT_IN_ROLE_NAMES.has(normalizedName);
 				return (
 					<div className="flex items-center">
 						<div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-medium">
@@ -158,7 +159,8 @@ export default function RolePage() {
 			fixed: "right",
 			render: (_, record) => {
 				const name = record.name ?? "";
-				const builtIn = BUILT_IN_ROLE_NAMES.has(name);
+				const normalizedName = name.trim().toUpperCase();
+				const builtIn = BUILT_IN_ROLE_NAMES.has(normalizedName);
 				const onEdit = () => {
 					if (builtIn) {
 						toast.warning("内置角色不可编辑");
@@ -168,6 +170,10 @@ export default function RolePage() {
 				};
 				const onDelete = () => handleDelete(record);
 				const onAssign = () => {
+					if (builtIn) {
+						toast.warning("内置角色由平台维护，不支持在线分配");
+						return;
+					}
 					if (!record.name) {
 						toast.error("角色信息缺失，无法分配");
 						return;
@@ -176,7 +182,14 @@ export default function RolePage() {
 				};
 				return (
 					<div className="flex items-center justify-center gap-1">
-						<Button variant="ghost" size="sm" title="分配用户" onClick={onAssign}>
+						<Button
+							variant="ghost"
+							size="sm"
+							title="分配用户"
+							onClick={onAssign}
+							disabled={builtIn}
+							className={builtIn ? "opacity-50" : undefined}
+						>
 							<Icon icon="mdi:account-plus" size={16} />
 						</Button>
 						<Button variant="ghost" size="sm" title="编辑角色" onClick={onEdit} disabled={builtIn}>
@@ -287,14 +300,4 @@ export default function RolePage() {
 		</div>
 	);
 }
-const BUILT_IN_ROLE_NAMES = new Set([
-	"SYSADMIN",
-	"AUTHADMIN",
-	"AUDITADMIN",
-	"DEPT_OWNER",
-	"DEPT_EDITOR",
-	"DEPT_VIEWER",
-	"INST_OWNER",
-	"INST_EDITOR",
-	"INST_VIEWER",
-]);
+const BUILT_IN_ROLE_NAMES = new Set(["SYSADMIN", "AUTHADMIN", "AUDITADMIN"]);

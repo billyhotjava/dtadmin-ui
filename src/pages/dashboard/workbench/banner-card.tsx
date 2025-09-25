@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import bgImg from "@/assets/images/background/banner-1.png";
-import Character from "@/assets/images/characters/character_3.png";
+import DataPlatform from "@/assets/images/illustrations/data-platform.svg";
 import { Icon } from "@/components/icon";
 import { GLOBAL_CONFIG } from "@/global-config";
 import { Button } from "@/ui/button";
@@ -28,27 +28,26 @@ export default function BannerCard() {
 					<div className="col-span-2 md:col-span-1">
 						<div className="flex flex-col gap-4">
 							<Title as="h2" className="text-white">
-								Explore Redesigned {GLOBAL_CONFIG.appName}
+								构建可信赖的大数据管理中枢
 							</Title>
 							<Text className="text-white">
-								The rand new User Interface with power of Shadcn/ui Components. Explore the Endless possibilities with{" "}
-								{GLOBAL_CONFIG.appName}.
+								掌控从采集、治理到分发的全链路数据流程，依托 {GLOBAL_CONFIG.appName} 快速洞察平台运行态势。
 							</Text>
 
 							<Button
 								variant="outline"
 								className="w-fit bg-white text-black"
-								onClick={() => window.open("https://discord.gg/fXemAXVNDa")}
+								onClick={() => window.open("https://github.com/topics/data-governance")}
 							>
-								<Icon icon="carbon:logo-discord" size={24} />
-								<span className="ml-2 font-black">Join Discord</span>
+								<Icon icon="solar:database-linear" size={22} />
+								<span className="ml-2 font-semibold">了解治理方案</span>
 							</Button>
 						</div>
 					</div>
 
 					<div className="col-span-2 md:col-span-1">
 						<div className="w-full h-full flex items-center justify-end">
-							<img src={Character} className="w-56 h-56" alt="character" />
+							<img src={DataPlatform} className="w-[15rem] h-[15rem]" alt="data-platform-visual" />
 						</div>
 					</div>
 				</div>

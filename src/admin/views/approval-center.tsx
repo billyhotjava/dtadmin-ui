@@ -1,241 +1,593 @@
+import { useContext, useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { adminApi } from "@/admin/api/adminApi";
+import type { ChangeRequest } from "@/admin/types";
+import { AdminSessionContext } from "@/admin/lib/session-context";
 import { Badge } from "@/ui/badge";
+import { Button } from "@/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/select";
 import { Text } from "@/ui/typography";
+import { toast } from "sonner";
+import { useUserInfo } from "@/store/userStore";
 
-interface PendingTask {
-	id: string;
-	module: string;
-	action: string;
-	target: string;
-	description: string;
-	submittedAt: string;
-	submittedBy: string;
-	status: string;
+type TaskCategory = "user" | "role";
+
+const CATEGORY_LABELS: Record<TaskCategory, string> = {
+	user: "用户管理",
+	role: "角色管理",
+};
+
+const ACTION_LABELS: Record<string, string> = {
+	CREATE: "新增",
+	UPDATE: "更新",
+	DELETE: "删除",
+	ENABLE: "启用",
+	DISABLE: "禁用",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+	PENDING: "待审批",
+	ON_HOLD: "待定",
+	APPROVED: "已通过",
+	REJECTED: "已驳回",
+	DRAFT: "草稿",
+};
+
+const STATUS_BADGE: Record<string, "outline" | "secondary" | "destructive"> = {
+	PENDING: "outline",
+	ON_HOLD: "outline",
+	APPROVED: "secondary",
+	REJECTED: "destructive",
+	DRAFT: "outline",
+};
+
+type DecisionStatus = "PENDING" | "ON_HOLD" | "APPROVED" | "REJECTED";
+
+interface DecisionRecord {
+	status: DecisionStatus;
+	decidedAt: string | null;
+	decidedBy: string | null;
 }
 
-interface CompletedTask extends Omit<PendingTask, "status"> {
-	decidedAt: string;
-	decidedBy: string;
-	result: string;
+type AugmentedChangeRequest = ChangeRequest & {
+	effectiveStatus: DecisionStatus;
+	effectiveDecidedAt: string | null;
+	effectiveDecidedBy: string | null;
+	override?: DecisionRecord;
+};
+
+const CATEGORY_ORDER: TaskCategory[] = ["user", "role"];
+
+function resolveCategory(resourceType: string | null | undefined): TaskCategory | null {
+	const normalized = resourceType?.toUpperCase();
+	if (normalized === "USER") return "user";
+	if (normalized === "ROLE") return "role";
+	return null;
 }
 
-const pendingTasks: PendingTask[] = [
-	{
-		id: "T-202405-001",
-		module: "用户管理",
-		action: "新增用户",
-		target: "dataops",
-		description: "为数据运维团队创建 dataops 账号并绑定默认角色",
-		submittedAt: "2024-05-12T09:30:00+08:00",
-		submittedBy: "sysadmin",
-		status: "待审批",
-	},
-	{
-		id: "T-202405-002",
-		module: "角色管理",
-		action: "新增角色",
-		target: "DATA_STEWARD",
-		description: "新增数据管家角色并配置数据目录权限",
-		submittedAt: "2024-05-12T14:05:00+08:00",
-		submittedBy: "sysadmin",
-		status: "待审批",
-	},
-	{
-		id: "T-202405-003",
-		module: "菜单管理",
-		action: "新增菜单",
-		target: "资产巡检",
-		description: "在门户端新增资产巡检菜单，指向 /portal/inspection",
-		submittedAt: "2024-05-13T08:50:00+08:00",
-		submittedBy: "sysadmin",
-		status: "待审批",
-	},
-	{
-		id: "T-202405-004",
-		module: "用户管理",
-		action: "停用用户",
-		target: "legacy.ops",
-		description: "停用长期未登录的 legacy.ops 账号",
-		submittedAt: "2024-05-13T10:20:00+08:00",
-		submittedBy: "sysadmin",
-		status: "待审批",
-	},
-	{
-		id: "T-202405-005",
-		module: "菜单管理",
-		action: "调整菜单",
-		target: "数据地图",
-		description: "调整数据地图菜单顺序并更新展示名称",
-		submittedAt: "2024-05-13T11:45:00+08:00",
-		submittedBy: "sysadmin",
-		status: "待审批",
-	},
-];
-
-const completedTasks: CompletedTask[] = [
-	{
-		id: "T-202405-006",
-		module: "角色管理",
-		action: "调整角色权限",
-		target: "DATA_ANALYST",
-		description: "为数据分析师角色补充审批中心访问权限",
-		submittedAt: "2024-05-10T09:10:00+08:00",
-		submittedBy: "sysadmin",
-		decidedAt: "2024-05-10T13:32:00+08:00",
-		decidedBy: "authadmin",
-		result: "已通过",
-	},
-	{
-		id: "T-202405-007",
-		module: "用户管理",
-		action: "重置密码",
-		target: "finance.owner",
-		description: "为财务负责人重置登录密码",
-		submittedAt: "2024-05-11T08:40:00+08:00",
-		submittedBy: "sysadmin",
-		decidedAt: "2024-05-11T09:05:00+08:00",
-		decidedBy: "authadmin",
-		result: "已通过",
-	},
-	{
-		id: "T-202405-008",
-		module: "菜单管理",
-		action: "删除菜单",
-		target: "旧版日志中心",
-		description: "删除已停用的旧版日志中心菜单",
-		submittedAt: "2024-05-09T16:20:00+08:00",
-		submittedBy: "sysadmin",
-		decidedAt: "2024-05-09T18:00:00+08:00",
-		decidedBy: "authadmin",
-		result: "已驳回",
-	},
-	{
-		id: "T-202405-009",
-		module: "菜单管理",
-		action: "更新菜单",
-		target: "自助取数",
-		description: "更新自助取数菜单的路由信息",
-		submittedAt: "2024-05-08T10:15:00+08:00",
-		submittedBy: "sysadmin",
-		decidedAt: "2024-05-08T12:45:00+08:00",
-		decidedBy: "authadmin",
-		result: "已通过",
-	},
-	{
-		id: "T-202405-010",
-		module: "用户管理",
-		action: "调整角色",
-		target: "dba.team",
-		description: "为数据库团队批量绑定 SYSADMIN 角色",
-		submittedAt: "2024-05-07T09:30:00+08:00",
-		submittedBy: "sysadmin",
-		decidedAt: "2024-05-07T11:05:00+08:00",
-		decidedBy: "authadmin",
-		result: "已通过",
-	},
-];
-
-export default function ApprovalCenterView() {
-	return (
-		<div className="space-y-6">
-			<Card>
-				<CardHeader className="space-y-2">
-					<CardTitle>待审批任务</CardTitle>
-					<Text variant="body3" className="text-muted-foreground">
-						展示 sysadmin 发起的最新变更，请根据业务影响及时处理。
-					</Text>
-				</CardHeader>
-				<CardContent className="overflow-x-auto">
-					<table className="min-w-full table-fixed text-sm">
-						<thead className="bg-muted/60">
-							<tr className="text-left">
-								<th className="px-4 py-3 font-medium">操作编号</th>
-								<th className="px-4 py-3 font-medium">所属模块</th>
-								<th className="px-4 py-3 font-medium">操作内容</th>
-								<th className="px-4 py-3 font-medium">影响对象</th>
-								<th className="px-4 py-3 font-medium">提交信息</th>
-								<th className="px-4 py-3 font-medium">当前状态</th>
-							</tr>
-						</thead>
-						<tbody>
-							{pendingTasks.map((task) => (
-								<tr key={task.id} className="border-b last:border-b-0">
-									<td className="px-4 py-3 font-medium">{task.id}</td>
-									<td className="px-4 py-3">
-										<div className="font-medium">{task.module}</div>
-										<div className="text-xs text-muted-foreground">{task.action}</div>
-									</td>
-									<td className="px-4 py-3 text-sm">
-										<div>{task.description}</div>
-									</td>
-									<td className="px-4 py-3">{task.target}</td>
-									<td className="px-4 py-3 text-xs text-muted-foreground">
-										<div>{formatDateTime(task.submittedAt)}</div>
-										<div>提交人：{task.submittedBy}</div>
-									</td>
-									<td className="px-4 py-3">
-										<Badge variant="outline">{task.status}</Badge>
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</CardContent>
-			</Card>
-
-			<Card>
-				<CardHeader className="space-y-2">
-					<CardTitle>已完成审批</CardTitle>
-					<Text variant="body3" className="text-muted-foreground">
-						历史审批结果会同步记录审批人、审批时间以及最终处理结论。
-					</Text>
-				</CardHeader>
-				<CardContent className="overflow-x-auto">
-					<table className="min-w-full table-fixed text-sm">
-						<thead className="bg-muted/60">
-							<tr className="text-left">
-								<th className="px-4 py-3 font-medium">操作编号</th>
-								<th className="px-4 py-3 font-medium">所属模块</th>
-								<th className="px-4 py-3 font-medium">操作内容</th>
-								<th className="px-4 py-3 font-medium">影响对象</th>
-								<th className="px-4 py-3 font-medium">审批信息</th>
-								<th className="px-4 py-3 font-medium">处理结果</th>
-							</tr>
-						</thead>
-						<tbody>
-							{completedTasks.map((task) => (
-								<tr key={task.id} className="border-b last:border-b-0">
-									<td className="px-4 py-3 font-medium">{task.id}</td>
-									<td className="px-4 py-3">
-										<div className="font-medium">{task.module}</div>
-										<div className="text-xs text-muted-foreground">{task.action}</div>
-									</td>
-									<td className="px-4 py-3 text-sm">
-										<div>{task.description}</div>
-									</td>
-									<td className="px-4 py-3">{task.target}</td>
-									<td className="px-4 py-3 text-xs text-muted-foreground">
-										<div>审批时间：{formatDateTime(task.decidedAt)}</div>
-										<div>审批人：{task.decidedBy}</div>
-										<div>提交时间：{formatDateTime(task.submittedAt)}</div>
-									</td>
-									<td className="px-4 py-3">
-										<Badge variant={task.result === "已驳回" ? "destructive" : "secondary"}>{task.result}</Badge>
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</CardContent>
-			</Card>
-		</div>
-	);
+function parseJson(value?: string | null): unknown {
+	if (!value) return null;
+	try {
+		return JSON.parse(value);
+	} catch (error) {
+		console.warn("Failed to parse change request payload", error, value);
+		return null;
+	}
 }
 
-function formatDateTime(value: string) {
+function asRecord(value: unknown): Record<string, unknown> | null {
+	if (value && typeof value === "object" && !Array.isArray(value)) {
+		return value as Record<string, unknown>;
+	}
+	return null;
+}
+
+function getStringField(source: Record<string, unknown> | null, key: string): string | null {
+	if (!source) return null;
+	const raw = source[key];
+	return typeof raw === "string" && raw.trim().length > 0 ? raw : null;
+}
+
+function resolveTarget(request: ChangeRequest): string {
+	const payload = asRecord(parseJson(request.payloadJson));
+	const diff = asRecord(parseJson(request.diffJson));
+	const after = diff && asRecord(diff.after);
+	const candidates = [
+		request.resourceId,
+		getStringField(payload, "username"),
+		getStringField(payload, "name"),
+		getStringField(after, "username"),
+		getStringField(after, "name"),
+	];
+	const target = candidates.find((item) => typeof item === "string" && item.trim().length > 0);
+	return target ? String(target) : "-";
+}
+
+function summarizeDetails(request: ChangeRequest): string {
+	const payload = asRecord(parseJson(request.payloadJson));
+	const diff = asRecord(parseJson(request.diffJson));
+	if (payload) {
+		const entries = Object.entries(payload).filter(([, value]) => value != null);
+		if (entries.length === 0) return "—";
+		return entries
+			.slice(0, 3)
+			.map(([key, value]) => `${key}: ${typeof value === "string" ? value : JSON.stringify(value)}`)
+			.join("；");
+	}
+	if (diff) {
+		const after = asRecord(diff.after);
+		if (after) {
+			return summarizeDetails({ ...request, payloadJson: JSON.stringify(after) });
+		}
+		return JSON.stringify(diff);
+	}
+	return "—";
+}
+
+function getActionText(request: ChangeRequest): string {
+	const actionLabel = ACTION_LABELS[request.action?.toUpperCase()] ?? request.action;
+	const category = resolveCategory(request.resourceType);
+	const categoryLabel = category ? CATEGORY_LABELS[category] : request.resourceType;
+	return `${actionLabel || "操作"}${categoryLabel ? ` · ${categoryLabel}` : ""}`;
+}
+
+function getStatusLabel(status: string): string {
+	return STATUS_LABELS[status?.toUpperCase()] ?? status;
+}
+
+function getStatusBadgeVariant(status: string): "outline" | "secondary" | "destructive" {
+	return STATUS_BADGE[status?.toUpperCase()] ?? "outline";
+}
+
+function formatDateTime(value?: string | null): string {
+	if (!value) return "-";
 	const date = new Date(value);
 	if (Number.isNaN(date.getTime())) {
 		return value;
 	}
 	return date.toLocaleString("zh-CN", { hour12: false });
+}
+
+function formatJson(value: Record<string, unknown> | null) {
+	if (!value) return "—";
+	try {
+		return JSON.stringify(value, null, 2);
+	} catch (error) {
+		console.warn("Failed to stringify JSON content", error, value);
+		return "—";
+	}
+}
+
+function normalizeStatus(status?: string | null): DecisionStatus {
+	const normalized = status?.toUpperCase();
+	if (normalized === "APPROVED" || normalized === "REJECTED") {
+		return normalized;
+	}
+	if (normalized === "ON_HOLD") {
+		return "ON_HOLD";
+	}
+	return "PENDING";
+}
+
+export default function ApprovalCenterView() {
+	const sessionContext = useContext(AdminSessionContext);
+	const userInfo = useUserInfo();
+	const session = sessionContext ?? {
+		role: "AUTHADMIN" as const,
+		username: userInfo?.username || userInfo?.fullName || userInfo?.email,
+		email: userInfo?.email,
+	};
+	const {
+		data: changeRequests = [],
+		isLoading,
+		isError,
+	} = useQuery<ChangeRequest[]>({
+		queryKey: ["admin", "change-requests"],
+		queryFn: () => adminApi.getChangeRequests(),
+	});
+
+	const [decisions, setDecisions] = useState<Record<number, DecisionRecord>>({});
+	const [categoryFilter, setCategoryFilter] = useState<TaskCategory>(CATEGORY_ORDER[0]);
+	const [activeTaskId, setActiveTaskId] = useState<number | null>(null);
+	const [decisionLoading, setDecisionLoading] = useState(false);
+
+	const augmentedRequests = useMemo<AugmentedChangeRequest[]>(() => {
+		return changeRequests.map((item) => {
+			const override = decisions[item.id];
+			const effectiveStatus = override?.status ?? normalizeStatus(item.status);
+			return {
+				...item,
+				effectiveStatus,
+				effectiveDecidedAt: override?.decidedAt ?? item.decidedAt ?? null,
+				effectiveDecidedBy: override?.decidedBy ?? item.decidedBy ?? null,
+				override,
+			};
+		});
+	}, [changeRequests, decisions]);
+
+	const pendingGroups = useMemo(() => {
+		const groups: Record<TaskCategory, AugmentedChangeRequest[]> = {
+			user: [],
+			role: [],
+		};
+		for (const item of augmentedRequests) {
+			const category = resolveCategory(item.resourceType);
+			if (!category) continue;
+			if (item.effectiveStatus === "APPROVED" || item.effectiveStatus === "REJECTED") continue;
+			groups[category].push(item);
+		}
+		return groups;
+	}, [augmentedRequests]);
+
+	const completedGroups = useMemo(() => {
+		const groups: Record<TaskCategory, AugmentedChangeRequest[]> = {
+			user: [],
+			role: [],
+		};
+		for (const item of augmentedRequests) {
+			const category = resolveCategory(item.resourceType);
+			if (!category) continue;
+			if (item.effectiveStatus === "APPROVED" || item.effectiveStatus === "REJECTED") {
+				groups[category].push(item);
+			}
+		}
+		return groups;
+	}, [augmentedRequests]);
+
+	const categoriesWithData = useMemo(() => {
+		return CATEGORY_ORDER.filter((category) => {
+			return pendingGroups[category].length > 0 || completedGroups[category].length > 0;
+		});
+	}, [pendingGroups, completedGroups]);
+
+	useEffect(() => {
+		if (categoriesWithData.length === 0) {
+			if (categoryFilter !== CATEGORY_ORDER[0]) {
+				setCategoryFilter(CATEGORY_ORDER[0]);
+			}
+			return;
+		}
+		if (!categoriesWithData.includes(categoryFilter)) {
+			setCategoryFilter(categoriesWithData[0]);
+		}
+	}, [categoriesWithData, categoryFilter]);
+
+	const selectedCategory = categoryFilter;
+	const selectedLabel = CATEGORY_LABELS[selectedCategory];
+	const selectedPending = pendingGroups[selectedCategory] ?? [];
+	const selectedCompleted = completedGroups[selectedCategory] ?? [];
+	const activeTask = useMemo(
+		() => augmentedRequests.find((item) => item.id === activeTaskId) ?? null,
+		[augmentedRequests, activeTaskId],
+	);
+
+	const handleDecision = (status: DecisionStatus) => {
+		if (!activeTask) return;
+		setDecisionLoading(true);
+		const decisionId = activeTask.id;
+		const decidedBy = session.username ?? session.email ?? "authadmin";
+		window.setTimeout(() => {
+			setDecisions((prev) => ({
+				...prev,
+				[decisionId]: {
+					status,
+					decidedAt: status === "APPROVED" || status === "REJECTED" ? new Date().toISOString() : null,
+					decidedBy,
+				},
+			}));
+			setDecisionLoading(false);
+			setActiveTaskId(null);
+			const message =
+				status === "APPROVED"
+					? "已批准该变更请求"
+					: status === "REJECTED"
+						? "已拒绝该变更请求"
+						: "已将该请求标记为待定";
+			toast.success(message);
+		}, 480);
+	};
+
+	const handleCloseDialog = () => {
+		if (!decisionLoading) {
+			setActiveTaskId(null);
+		}
+	};
+
+	const activePayload = useMemo(() => (activeTask ? asRecord(parseJson(activeTask.payloadJson)) : null), [activeTask]);
+	const activeDiff = useMemo(() => (activeTask ? asRecord(parseJson(activeTask.diffJson)) : null), [activeTask]);
+	const diffBefore = useMemo(() => (activeDiff ? asRecord(activeDiff["before"]) : null), [activeDiff]);
+	const diffAfter = useMemo(() => (activeDiff ? asRecord(activeDiff["after"]) : null), [activeDiff]);
+
+	return (
+		<>
+			<div className="space-y-6">
+				<Card>
+					<CardContent className="flex flex-wrap items-center justify-between gap-3">
+						<Text variant="body2" className="font-semibold">
+							审批类型筛选
+						</Text>
+						<Select value={selectedCategory} onValueChange={(value) => setCategoryFilter(value as TaskCategory)}>
+							<SelectTrigger className="w-44">
+								<SelectValue placeholder="请选择审批类型" />
+							</SelectTrigger>
+							<SelectContent>
+								{CATEGORY_ORDER.map((category) => (
+									<SelectItem key={category} value={category}>
+										{CATEGORY_LABELS[category]}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</CardContent>
+				</Card>
+
+				<Card>
+					<CardHeader className="space-y-2">
+						<CardTitle>待审批任务</CardTitle>
+						<Text variant="body3" className="text-muted-foreground">
+							展示最新待处理的变更请求，切换筛选以查看不同类型。
+						</Text>
+					</CardHeader>
+					<CardContent className="space-y-3">
+						{isLoading ? (
+							<Text variant="body3" className="text-muted-foreground">
+								数据加载中…
+							</Text>
+						) : isError ? (
+							<Text variant="body3" className="text-destructive">
+								加载审批列表失败，请稍后重试。
+							</Text>
+						) : (
+							<>
+								<div className="flex items-center justify-between">
+									<Text variant="body2" className="font-semibold">
+										{selectedLabel}
+									</Text>
+									<Badge variant="secondary">{selectedPending.length}</Badge>
+								</div>
+								{selectedPending.length === 0 ? (
+									<Text variant="body3" className="text-muted-foreground">
+										暂无待审批条目。
+									</Text>
+								) : (
+									<div className="overflow-x-auto">
+										<table className="min-w-full table-fixed text-sm">
+											<thead className="bg-muted/60">
+												<tr className="text-left">
+													<th className="px-4 py-3 font-medium">操作编号</th>
+													<th className="px-4 py-3 font-medium">操作内容</th>
+													<th className="px-4 py-3 font-medium">影响对象</th>
+													<th className="px-4 py-3 font-medium">提交信息</th>
+													<th className="px-4 py-3 font-medium">当前状态</th>
+													<th className="px-4 py-3 font-medium text-right">操作</th>
+												</tr>
+											</thead>
+											<tbody>
+												{selectedPending.map((task) => (
+													<tr key={task.id} className="border-b last:border-b-0">
+														<td className="px-4 py-3 font-medium">CR-{task.id}</td>
+														<td className="px-4 py-3">
+															<div className="font-medium">{getActionText(task)}</div>
+															<div className="text-xs text-muted-foreground">{summarizeDetails(task)}</div>
+														</td>
+														<td className="px-4 py-3">{resolveTarget(task)}</td>
+														<td className="px-4 py-3 text-xs text-muted-foreground">
+															<div>{formatDateTime(task.requestedAt)}</div>
+															<div>提交人：{task.requestedBy}</div>
+														</td>
+														<td className="px-4 py-3">
+															<Badge variant={getStatusBadgeVariant(task.effectiveStatus)}>
+																{getStatusLabel(task.effectiveStatus)}
+															</Badge>
+														</td>
+														<td className="px-4 py-3 text-right">
+															<Button
+																size="sm"
+																variant="outline"
+																onClick={() => setActiveTaskId(task.id)}
+																disabled={decisionLoading && activeTaskId === task.id}
+															>
+																操作
+															</Button>
+														</td>
+													</tr>
+												))}
+											</tbody>
+										</table>
+									</div>
+								)}
+							</>
+						)}
+					</CardContent>
+				</Card>
+
+				<Card>
+					<CardHeader className="space-y-2">
+						<CardTitle>已完成审批</CardTitle>
+						<Text variant="body3" className="text-muted-foreground">
+							已处理的审批会记录审批人、时间以及结论。
+						</Text>
+					</CardHeader>
+					<CardContent className="space-y-3">
+						{isLoading ? (
+							<Text variant="body3" className="text-muted-foreground">
+								数据加载中…
+							</Text>
+						) : isError ? (
+							<Text variant="body3" className="text-destructive">
+								加载审批列表失败，请稍后重试。
+							</Text>
+						) : (
+							<>
+								<div className="flex items-center justify-between">
+									<Text variant="body2" className="font-semibold">
+										{selectedLabel}
+									</Text>
+									<Badge variant="outline">{selectedCompleted.length}</Badge>
+								</div>
+								{selectedCompleted.length === 0 ? (
+									<Text variant="body3" className="text-muted-foreground">
+										暂无历史审批记录。
+									</Text>
+								) : (
+									<div className="overflow-x-auto">
+										<table className="min-w-full table-fixed text-sm">
+											<thead className="bg-muted/60">
+												<tr className="text-left">
+													<th className="px-4 py-3 font-medium">操作编号</th>
+													<th className="px-4 py-3 font-medium">操作内容</th>
+													<th className="px-4 py-3 font-medium">影响对象</th>
+													<th className="px-4 py-3 font-medium">审批信息</th>
+													<th className="px-4 py-3 font-medium">处理结果</th>
+												</tr>
+											</thead>
+											<tbody>
+												{selectedCompleted.map((task) => (
+													<tr key={task.id} className="border-b last:border-b-0">
+														<td className="px-4 py-3 font-medium">CR-{task.id}</td>
+														<td className="px-4 py-3">
+															<div className="font-medium">{getActionText(task)}</div>
+															<div className="text-xs text-muted-foreground">{summarizeDetails(task)}</div>
+														</td>
+														<td className="px-4 py-3">{resolveTarget(task)}</td>
+														<td className="px-4 py-3 text-xs text-muted-foreground">
+															<div>审批时间：{formatDateTime(task.effectiveDecidedAt)}</div>
+															<div>审批人：{task.effectiveDecidedBy ?? "-"}</div>
+															<div>提交时间：{formatDateTime(task.requestedAt)}</div>
+														</td>
+														<td className="px-4 py-3">
+															<Badge variant={getStatusBadgeVariant(task.effectiveStatus)}>
+																{getStatusLabel(task.effectiveStatus)}
+															</Badge>
+														</td>
+													</tr>
+												))}
+											</tbody>
+										</table>
+									</div>
+								)}
+							</>
+						)}
+					</CardContent>
+				</Card>
+			</div>
+
+			<Dialog open={Boolean(activeTask)} onOpenChange={(open) => (!open ? handleCloseDialog() : null)}>
+				<DialogContent className="max-w-3xl">
+					<DialogHeader>
+						<DialogTitle>审批详情</DialogTitle>
+						<DialogDescription>请核对变更内容后选择处理操作。</DialogDescription>
+					</DialogHeader>
+					{activeTask ? (
+						<div className="space-y-5 text-sm">
+							<div className="grid gap-4 sm:grid-cols-2">
+								<div className="space-y-1">
+									<Text variant="body3" className="text-muted-foreground">
+										操作编号
+									</Text>
+									<div className="font-medium">CR-{activeTask.id}</div>
+								</div>
+								<div className="space-y-1">
+									<Text variant="body3" className="text-muted-foreground">
+										当前状态
+									</Text>
+									<Badge variant={getStatusBadgeVariant(activeTask.effectiveStatus)}>
+										{getStatusLabel(activeTask.effectiveStatus)}
+									</Badge>
+								</div>
+								<div className="space-y-1">
+									<Text variant="body3" className="text-muted-foreground">
+										操作内容
+									</Text>
+									<div className="font-medium">{getActionText(activeTask)}</div>
+									<div className="text-xs text-muted-foreground">{summarizeDetails(activeTask)}</div>
+								</div>
+								<div className="space-y-1">
+									<Text variant="body3" className="text-muted-foreground">
+										影响对象
+									</Text>
+									<div className="font-medium">{resolveTarget(activeTask)}</div>
+								</div>
+								<div className="space-y-1">
+									<Text variant="body3" className="text-muted-foreground">
+										提交人
+									</Text>
+									<div>{activeTask.requestedBy}</div>
+								</div>
+								<div className="space-y-1">
+									<Text variant="body3" className="text-muted-foreground">
+										提交时间
+									</Text>
+									<div>{formatDateTime(activeTask.requestedAt)}</div>
+								</div>
+							</div>
+
+							{activePayload && Object.keys(activePayload).length > 0 ? (
+								<div className="space-y-2">
+									<Text variant="body3" className="text-muted-foreground">
+										提交内容
+									</Text>
+									<pre className="max-h-64 overflow-auto rounded-md bg-muted/40 p-3 text-xs">
+										{formatJson(activePayload)}
+									</pre>
+								</div>
+							) : null}
+
+							{(diffBefore && Object.keys(diffBefore).length > 0) ||
+							(diffAfter && Object.keys(diffAfter).length > 0) ? (
+								<div className="space-y-3">
+									<Text variant="body3" className="text-muted-foreground">
+										差异信息
+									</Text>
+									{diffBefore && Object.keys(diffBefore).length > 0 ? (
+										<div className="space-y-1">
+											<Text variant="body3" className="text-muted-foreground">
+												变更前
+											</Text>
+											<pre className="max-h-48 overflow-auto rounded-md bg-muted/40 p-3 text-xs">
+												{formatJson(diffBefore)}
+											</pre>
+										</div>
+									) : null}
+									{diffAfter && Object.keys(diffAfter).length > 0 ? (
+										<div className="space-y-1">
+											<Text variant="body3" className="text-muted-foreground">
+												变更后
+											</Text>
+											<pre className="max-h-48 overflow-auto rounded-md bg-muted/40 p-3 text-xs">
+												{formatJson(diffAfter)}
+											</pre>
+										</div>
+									) : null}
+								</div>
+							) : null}
+						</div>
+					) : null}
+					<DialogFooter>
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => handleDecision("ON_HOLD")}
+							disabled={decisionLoading || !activeTask}
+						>
+							{decisionLoading ? "处理中..." : "待定"}
+						</Button>
+						<Button
+							type="button"
+							variant="destructive"
+							onClick={() => handleDecision("REJECTED")}
+							disabled={decisionLoading || !activeTask}
+						>
+							{decisionLoading ? "处理中..." : "拒绝"}
+						</Button>
+						<Button type="button" onClick={() => handleDecision("APPROVED")} disabled={decisionLoading || !activeTask}>
+							{decisionLoading ? "处理中..." : "批准"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+		</>
+	);
 }
