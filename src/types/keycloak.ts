@@ -181,6 +181,7 @@ export interface PaginationParams {
  */
 export interface UserTableRow extends KeycloakUser {
 	key: string;
+	roleNames?: string[];
 }
 
 /**
