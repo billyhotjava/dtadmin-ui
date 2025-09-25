@@ -58,6 +58,10 @@ export default function RolePage() {
 
 	// 删除角色
 	const handleDelete = (role: KeycloakRole) => {
+		if (role.name && BUILT_IN_ROLE_NAMES.has(role.name)) {
+			toast.warning("内置角色不可删除");
+			return;
+		}
 		Modal.confirm({
 			title: "确认删除",
 			content: `确定要删除角色 "${role.name}" 吗？此操作无法撤销。`,
@@ -84,21 +88,38 @@ export default function RolePage() {
 			title: "角色名称",
 			dataIndex: "name",
 			width: 200,
-			render: (name: string, record) => (
-				<div className="flex items-center">
-					<div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-medium">
-						{name.charAt(0).toUpperCase()}
+			render: (name: string, record) => {
+				const builtIn = BUILT_IN_ROLE_NAMES.has(name);
+				return (
+					<div className="flex items-center">
+						<div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-medium">
+							{name.charAt(0).toUpperCase()}
+						</div>
+						<div className="ml-3 space-y-1">
+							<div className="flex items-center gap-2">
+								<span className="font-medium">{name}</span>
+								{builtIn ? (
+									<Badge variant="outline" className="text-xs">
+										内置
+									</Badge>
+								) : null}
+							</div>
+							<div className="flex flex-wrap gap-1">
+								{record.composite ? (
+									<Badge variant="secondary" className="text-xs">
+										复合角色
+									</Badge>
+								) : null}
+								{record.clientRole ? (
+									<Badge variant="secondary" className="text-xs">
+										客户端角色
+									</Badge>
+								) : null}
+							</div>
+						</div>
 					</div>
-					<div className="ml-3">
-						<div className="font-medium">{name}</div>
-						{record.composite && (
-							<Badge variant="secondary" className="text-xs">
-								复合角色
-							</Badge>
-						)}
-					</div>
-				</div>
-			),
+				);
+			},
 		},
 		{
 			title: "描述",
@@ -128,27 +149,35 @@ export default function RolePage() {
 			align: "center",
 			width: 120,
 			fixed: "right",
-			render: (_, record) => (
-				<div className="flex items-center justify-center gap-1">
-					<Button
-						variant="ghost"
-						size="sm"
-						title="编辑角色"
-						onClick={() => setRoleModal({ open: true, mode: "edit", role: record })}
-					>
-						<Icon icon="solar:pen-bold-duotone" size={16} />
-					</Button>
-					<Button
-						variant="ghost"
-						size="sm"
-						title="删除角色"
-						onClick={() => handleDelete(record)}
-						className="text-red-600 hover:text-red-700"
-					>
-						<Icon icon="mingcute:delete-2-fill" size={16} />
-					</Button>
-				</div>
-			),
+			render: (_, record) => {
+				const name = record.name ?? "";
+				const builtIn = BUILT_IN_ROLE_NAMES.has(name);
+				const onEdit = () => {
+					if (builtIn) {
+						toast.warning("内置角色不可编辑");
+						return;
+					}
+					setRoleModal({ open: true, mode: "edit", role: record });
+				};
+				const onDelete = () => handleDelete(record);
+				return (
+					<div className="flex items-center justify-center gap-1">
+						<Button variant="ghost" size="sm" title="编辑角色" onClick={onEdit} disabled={builtIn}>
+							<Icon icon="solar:pen-bold-duotone" size={16} />
+						</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							title="删除角色"
+							onClick={onDelete}
+							disabled={builtIn}
+							className={`text-red-600 hover:text-red-700 ${builtIn ? "opacity-50" : ""}`}
+						>
+							<Icon icon="mingcute:delete-2-fill" size={16} />
+						</Button>
+					</div>
+				);
+			},
 		},
 	];
 
@@ -231,3 +260,14 @@ export default function RolePage() {
 		</div>
 	);
 }
+const BUILT_IN_ROLE_NAMES = new Set([
+	"SYSADMIN",
+	"AUTHADMIN",
+	"AUDITADMIN",
+	"DEPT_OWNER",
+	"DEPT_EDITOR",
+	"DEPT_VIEWER",
+	"INST_OWNER",
+	"INST_EDITOR",
+	"INST_VIEWER",
+]);

@@ -74,6 +74,10 @@ export interface PortalMenuItem {
 
 export type OrgDataLevel = "DATA_PUBLIC" | "DATA_INTERNAL" | "DATA_SECRET" | "DATA_TOP_SECRET";
 
+export type SecurityLevel = "NON_SECRET" | "GENERAL" | "IMPORTANT" | "CORE";
+
+export type DataOperation = "read" | "write" | "export";
+
 export interface OrganizationNode {
 	id: number;
 	name: string;
@@ -122,6 +126,66 @@ export interface AdminRoleDetail {
 	memberCount: number;
 	approvalFlow: string;
 	updatedAt: string;
+}
+
+export interface AdminDataset {
+	id: number;
+	name: string;
+	businessCode: string;
+	description?: string;
+	dataLevel: OrgDataLevel;
+	ownerOrgId: number;
+	ownerOrgName: string;
+	isInstituteShared: boolean;
+	rowCount: number;
+	updatedAt: string;
+}
+
+export interface AdminCustomRole {
+	id: number;
+	name: string;
+	scope: "DEPARTMENT" | "INSTITUTE";
+	operations: DataOperation[];
+	maxRows?: number | null;
+	allowDesensitizeJson?: boolean;
+	maxDataLevel: OrgDataLevel;
+	description?: string;
+	createdBy: string;
+	createdAt: string;
+}
+
+export interface AdminRoleAssignment {
+	id: number;
+	role: string;
+	username: string;
+	displayName: string;
+	userSecurityLevel: SecurityLevel;
+	scopeOrgId: number | null;
+	scopeOrgName: string;
+	datasetIds: number[];
+	operations: DataOperation[];
+	grantedBy: string;
+	grantedAt: string;
+}
+
+export interface CreateCustomRolePayload {
+	name: string;
+	scope: "DEPARTMENT" | "INSTITUTE";
+	operations: DataOperation[];
+	maxRows?: number | null;
+	allowDesensitizeJson?: boolean;
+	maxDataLevel: OrgDataLevel;
+	description?: string;
+}
+
+export interface CreateRoleAssignmentPayload {
+	role: string;
+	username: string;
+	displayName: string;
+	userSecurityLevel: SecurityLevel;
+	scopeOrgId: number | null;
+	datasetIds: number[];
+	operations: DataOperation[];
 }
 
 export interface PermissionCatalogSection {

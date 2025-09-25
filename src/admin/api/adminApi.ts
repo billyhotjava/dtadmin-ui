@@ -1,9 +1,14 @@
 import type {
+	AdminCustomRole,
+	AdminDataset,
+	AdminRoleAssignment,
 	AdminRoleDetail,
 	AdminUser,
 	AdminWhoami,
 	AuditEvent,
 	ChangeRequest,
+	CreateCustomRolePayload,
+	CreateRoleAssignmentPayload,
 	OrganizationNode,
 	OrganizationPayload,
 	PermissionCatalogSection,
@@ -131,5 +136,32 @@ export const adminApi = {
 	getPermissionCatalog: () =>
 		apiClient.get<PermissionCatalogSection[]>({
 			url: "/admin/permissions/catalog",
+		}),
+
+	getDatasets: () =>
+		apiClient.get<AdminDataset[]>({
+			url: "/admin/datasets",
+		}),
+
+	getCustomRoles: () =>
+		apiClient.get<AdminCustomRole[]>({
+			url: "/admin/custom-roles",
+		}),
+
+	createCustomRole: (payload: CreateCustomRolePayload) =>
+		apiClient.post<AdminCustomRole>({
+			url: "/admin/custom-roles",
+			data: payload,
+		}),
+
+	getRoleAssignments: () =>
+		apiClient.get<AdminRoleAssignment[]>({
+			url: "/admin/role-assignments",
+		}),
+
+	createRoleAssignment: (payload: CreateRoleAssignmentPayload) =>
+		apiClient.post<AdminRoleAssignment>({
+			url: "/admin/role-assignments",
+			data: payload,
 		}),
 };
