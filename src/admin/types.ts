@@ -1,4 +1,4 @@
-export type AdminRole = "SYSADMIN" | "AUTHADMIN" | "AUDITADMIN";
+export type AdminRole = "SYSADMIN" | "OPADMIN" | "AUTHADMIN" | "AUDITADMIN";
 
 export interface AdminWhoami {
 	allowed: boolean;
@@ -16,6 +16,9 @@ export function normalizeAdminRole(role: string | null | undefined): AdminRole |
 		case "SYSADMIN":
 		case "SYS_ADMIN":
 			return "SYSADMIN";
+		case "OPADMIN":
+		case "OP_ADMIN":
+			return "OPADMIN";
 		case "AUTHADMIN":
 		case "AUTH_ADMIN":
 			return "AUTHADMIN";

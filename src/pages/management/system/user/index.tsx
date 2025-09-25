@@ -6,13 +6,13 @@ import type { KeycloakUser, PaginationParams, UserProfileConfig, UserTableRow } 
 import { KeycloakUserProfileService, KeycloakUserService } from "@/api/services/keycloakService";
 import type { CustomUserAttributeKey } from "@/constants/user";
 import { Icon } from "@/components/icon";
+import zhCN from "@/locales/lang/zh_CN";
 import { PERSON_SECURITY_LEVELS } from "@/constants/governance";
 import { usePathname, useRouter } from "@/routes/hooks";
 import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
 import { Card, CardContent, CardHeader } from "@/ui/card";
 import { Input } from "@/ui/input";
-import ResetPasswordModal from "./reset-password-modal";
 import UserModal from "./user-modal";
 import { useBilingualText } from "@/hooks/useBilingualText";
 
@@ -88,11 +88,7 @@ export default function UserPage() {
 		user?: KeycloakUser;
 	}>({ open: false, mode: "create" });
 
-	const [resetPasswordModal, setResetPasswordModal] = useState<{
-		open: boolean;
-		userId: string;
-		username: string;
-	}>({ open: false, userId: "", username: "" });
+	// Removed reset password feature
 
 	const personLevelLabelMap = useMemo(() => {
 		return new Map(PERSON_SECURITY_LEVELS.map((item) => [item.value, item.label]));
@@ -215,13 +211,18 @@ export default function UserPage() {
 				if (!roles || roles.length === 0) {
 					return "-";
 				}
+				const zhMap = (zhCN as any)?.sys?.admin?.role ?? {};
 				return (
 					<div className="flex flex-wrap gap-1">
-						{roles.map((role) => (
-							<Badge key={role} variant="outline">
-								{role}
-							</Badge>
-						))}
+						{roles.map((role) => {
+							const code = (role || "").trim().toUpperCase();
+							const label = zhMap[code] || role;
+							return (
+								<Badge key={role} variant="outline">
+									{label}
+								</Badge>
+							);
+						})}
 					</div>
 				);
 			},
@@ -274,7 +275,7 @@ export default function UserPage() {
 			title: "操作",
 			key: "operation",
 			align: "center",
-			width: 200,
+			width: 160,
 			fixed: "right",
 			render: (_, record) => (
 				<div className="flex items-center justify-center gap-1">
@@ -288,20 +289,6 @@ export default function UserPage() {
 						onClick={() => setUserModal({ open: true, mode: "edit", user: record })}
 					>
 						<Icon icon="solar:pen-bold-duotone" size={16} />
-					</Button>
-					<Button
-						variant="ghost"
-						size="sm"
-						title="重置密码"
-						onClick={() =>
-							setResetPasswordModal({
-								open: true,
-								userId: record.id || "",
-								username: record.username,
-							})
-						}
-					>
-						<Icon icon="mdi:key-variant" size={16} />
 					</Button>
 				</div>
 			),
@@ -390,16 +377,7 @@ export default function UserPage() {
 				}}
 			/>
 
-			{/* 密码重置Modal */}
-			<ResetPasswordModal
-				open={resetPasswordModal.open}
-				userId={resetPasswordModal.userId}
-				username={resetPasswordModal.username}
-				onCancel={() => setResetPasswordModal({ open: false, userId: "", username: "" })}
-				onSuccess={() => {
-					setResetPasswordModal({ open: false, userId: "", username: "" });
-				}}
-			/>
+			{/* Reset password feature removed */}
 		</div>
 	);
 }

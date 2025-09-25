@@ -12,6 +12,7 @@ import { Input } from "@/ui/input";
 import RoleModal from "./role-modal";
 import RoleAssignModal from "./role-assign-modal";
 import { DATA_SECURITY_LEVEL_LABELS } from "@/constants/governance";
+import zhCN from "@/locales/lang/zh_CN";
 
 export default function RolePage() {
 	const [roles, setRoles] = useState<RoleTableRow[]>([]);
@@ -93,7 +94,7 @@ export default function RolePage() {
 	// 表格列定义
 	const columns: ColumnsType<RoleTableRow> = [
 		{
-			title: "角色名称",
+			title: "角色编号",
 			dataIndex: "name",
 			width: 200,
 			render: (name: string, record) => {
@@ -123,6 +124,17 @@ export default function RolePage() {
 						</div>
 					</div>
 				);
+			},
+		},
+		{
+			title: "角色名称",
+			dataIndex: "name",
+			width: 200,
+			render: (_name: string, record) => {
+				const code = (record.name ?? "").trim().toUpperCase();
+				const zhMap = (zhCN as any)?.sys?.admin?.role ?? {};
+				const zhLabel: string | undefined = zhMap[code];
+				return zhLabel || record.description || record.name || "-";
 			},
 		},
 		{
@@ -243,7 +255,7 @@ export default function RolePage() {
 					{/* 搜索栏 */}
 					<div className="flex items-center gap-2 mb-4">
 						<Input
-							placeholder="搜索角色名称或描述..."
+							placeholder="搜索角色编号或描述..."
 							value={searchValue}
 							onChange={(e) => setSearchValue(e.target.value)}
 							className="max-w-sm"
@@ -300,4 +312,4 @@ export default function RolePage() {
 		</div>
 	);
 }
-const BUILT_IN_ROLE_NAMES = new Set(["SYSADMIN", "AUTHADMIN", "AUDITADMIN"]);
+const BUILT_IN_ROLE_NAMES = new Set(["SYSADMIN", "OPADMIN", "AUTHADMIN", "AUDITADMIN"]);

@@ -21,6 +21,7 @@ import type {
 } from "@/admin/types";
 import { ResultStatus } from "@/types/enum";
 import { getActiveAdmin } from "../utils/session";
+import portalMenus from "../data/portal-menus.json";
 
 const ADMIN_API = "/api/admin";
 
@@ -63,31 +64,8 @@ const systemConfigs: SystemConfigItem[] = [
 	{ id: 3, key: "airflow.deployment", value: "v2.9.0", description: "调度集群版本" },
 ];
 
-const portalMenus: PortalMenuItem[] = [
-	{
-		id: 1,
-		name: "数据总览",
-		path: "/portal/overview",
-		component: "/pages/portal/overview",
-		sortOrder: 1,
-		children: [
-			{
-				id: 11,
-				name: "看板",
-				path: "/portal/overview/dashboard",
-				component: "/pages/portal/overview/dashboard",
-				sortOrder: 1,
-			},
-		],
-	},
-	{
-		id: 2,
-		name: "数据接入",
-		path: "/portal/ingestion",
-		component: "/pages/portal/ingestion",
-		sortOrder: 2,
-	},
-];
+// portalMenus are generated from dts-platform-webapp portal navigation as demo data
+// See: dts-platform-webapp/public/portal-menus.demo.json
 
 const organizations: OrganizationNode[] = [
 	{
@@ -279,6 +257,7 @@ function getRoleOperations(role: string): DataOperation[] {
 	}
 	switch (role) {
 		case "SYSADMIN":
+		case "OPADMIN":
 			return ["read", "write", "export"];
 		case "AUTHADMIN":
 			return ["read"];
@@ -391,6 +370,16 @@ const adminRoles: AdminRoleDetail[] = [
 	},
 	{
 		id: 2,
+		name: "OPADMIN",
+		description: "业务运维管理员，负责业务平台整体运维和关联工具组件的运维",
+		securityLevel: "机密",
+		permissions: ["user.update", "dataset.publish", "system.operate"],
+		memberCount: 2,
+		approvalFlow: "授权管理员单人审批",
+		updatedAt: faker.date.recent({ days: 2 }).toISOString(),
+	},
+	{
+		id: 3,
 		name: "AUTHADMIN",
 		description: "授权管理员，处理审批流程",
 		securityLevel: "秘密",
@@ -400,7 +389,7 @@ const adminRoles: AdminRoleDetail[] = [
 		updatedAt: faker.date.recent({ days: 2 }).toISOString(),
 	},
 	{
-		id: 3,
+		id: 4,
 		name: "AUDITADMIN",
 		description: "安全审计员，负责日志巡检与导出",
 		securityLevel: "秘密",
@@ -410,7 +399,7 @@ const adminRoles: AdminRoleDetail[] = [
 		updatedAt: faker.date.recent({ days: 5 }).toISOString(),
 	},
 	{
-		id: 4,
+		id: 5,
 		name: "DEPT_OWNER",
 		description: "部门主管，负责本部门数据治理与授权",
 		securityLevel: "重要",
@@ -420,7 +409,7 @@ const adminRoles: AdminRoleDetail[] = [
 		updatedAt: faker.date.recent({ days: 4 }).toISOString(),
 	},
 	{
-		id: 5,
+		id: 6,
 		name: "DEPT_EDITOR",
 		description: "部门数据专员，可维护本部门数据集",
 		securityLevel: "普通",
@@ -430,7 +419,7 @@ const adminRoles: AdminRoleDetail[] = [
 		updatedAt: faker.date.recent({ days: 6 }).toISOString(),
 	},
 	{
-		id: 6,
+		id: 7,
 		name: "DEPT_VIEWER",
 		description: "数据查阅员，仅在本部门查阅数据",
 		securityLevel: "普通",
@@ -440,7 +429,7 @@ const adminRoles: AdminRoleDetail[] = [
 		updatedAt: faker.date.recent({ days: 7 }).toISOString(),
 	},
 	{
-		id: 7,
+		id: 8,
 		name: "INST_OWNER",
 		description: "研究所领导，治理全院共享区数据",
 		securityLevel: "核心",
@@ -450,7 +439,7 @@ const adminRoles: AdminRoleDetail[] = [
 		updatedAt: faker.date.recent({ days: 8 }).toISOString(),
 	},
 	{
-		id: 8,
+		id: 9,
 		name: "INST_EDITOR",
 		description: "研究所数据专员，可编辑全院共享区数据",
 		securityLevel: "重要",

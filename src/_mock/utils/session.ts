@@ -1,6 +1,6 @@
 export interface AdminSessionState {
 	allowed: boolean;
-	role: "SYSADMIN" | "AUTHADMIN" | "AUDITADMIN";
+	role: "SYSADMIN" | "OPADMIN" | "AUTHADMIN" | "AUDITADMIN";
 	username: string;
 	email: string;
 }

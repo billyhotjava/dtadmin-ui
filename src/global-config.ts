@@ -54,7 +54,7 @@ const resolveApiBaseUrl = () => {
 };
 
 export const GLOBAL_CONFIG: GlobalConfig = {
-	appName: import.meta.env.VITE_APP_NAME || "Data Hub Admin",
+	appName: import.meta.env.VITE_APP_NAME || "数据管理平台系统端(密级)",
 	appVersion: packageJson.version,
 	defaultRoute: resolveDefaultRoute(),
 	publicPath: import.meta.env.VITE_PUBLIC_PATH || "/",

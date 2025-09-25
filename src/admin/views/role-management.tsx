@@ -116,7 +116,7 @@ const DATA_ORDER: Record<OrgDataLevel, number> = {
 	DATA_TOP_SECRET: 3,
 };
 
-const LOCKED_ADMIN_ROLES = new Set(["SYSADMIN", "AUTHADMIN", "AUDITADMIN"]);
+const LOCKED_ADMIN_ROLES = new Set(["SYSADMIN", "OPADMIN", "AUTHADMIN", "AUDITADMIN"]);
 
 function getRoleDisplayName(role: Pick<AdminRoleDetail, "name" | "description">) {
 	const description = role.description?.trim();

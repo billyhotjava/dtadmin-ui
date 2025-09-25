@@ -11,6 +11,15 @@ const roles: KeycloakRole[] = [
 		attributes: { category: "核心", dataSecurityLevel: "DATA_TOP_SECRET" },
 	},
 	{
+		id: "role-opadmin",
+		name: "OPADMIN",
+		description: "业务运维管理员，负责业务平台整体运维和关联工具组件的运维",
+		composite: true,
+		clientRole: false,
+		containerId: "realm",
+		attributes: { category: "核心", dataSecurityLevel: "DATA_TOP_SECRET" },
+	},
+	{
 		id: "role-authadmin",
 		name: "AUTHADMIN",
 		description: "授权管理员，审批用户与角色变更",

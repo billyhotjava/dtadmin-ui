@@ -2,15 +2,26 @@ import type { CSSProperties } from "react";
 import { isRouteErrorResponse, useRouteError } from "react-router";
 import { themeVars } from "@/theme/theme.css";
 import { ScrollArea } from "@/ui/scroll-area";
+import { useBilingualText } from "@/hooks/useBilingualText";
 import { Title } from "@/ui/typography";
 
 export default function ErrorBoundary() {
 	const error = useRouteError();
+	const t = useBilingualText();
 
 	return (
 		<ScrollArea className="w-full h-screen">
 			<div style={rootStyles()}>
-				<div style={containerStyles()}>{renderErrorMessage(error)}</div>
+				<div style={containerStyles()}>
+					{renderErrorMessage(error, (k, f) => {
+						try {
+							const v = t(k).trim();
+							return v.length > 0 ? v : f;
+						} catch {
+							return f;
+						}
+					})}
+				</div>
 			</div>
 		</ScrollArea>
 	);
@@ -28,7 +39,7 @@ function parseStackTrace(stack?: string) {
 	};
 }
 
-function renderErrorMessage(error: any) {
+function renderErrorMessage(error: any, translate?: (k: string, f: string) => string) {
 	if (isRouteErrorResponse(error)) {
 		return (
 			<>
@@ -45,7 +56,11 @@ function renderErrorMessage(error: any) {
 
 		return (
 			<>
-				<Title as="h2">Unexpected Application Error!</Title>
+				<Title as="h2">
+					{translate
+						? translate("sys.error.unexpected", "Unexpected Application Error!")
+						: "Unexpected Application Error!"}
+				</Title>
 				<p style={messageStyles()}>
 					{error.name}: {error.message}
 				</p>
@@ -59,7 +74,7 @@ function renderErrorMessage(error: any) {
 		);
 	}
 
-	return <Title as="h2">Unknown Error</Title>;
+	return <Title as="h2">{translate ? translate("sys.error.unknown", "Unknown Error") : "Unknown Error"}</Title>;
 }
 
 const rootStyles = (): CSSProperties => {

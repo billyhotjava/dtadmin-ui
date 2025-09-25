@@ -22,6 +22,7 @@ const API_PREFIX = "/api/keycloak";
 
 const BUILT_IN_ROLES = new Set([
 	"SYSADMIN",
+	"OPADMIN",
 	"AUTHADMIN",
 	"AUDITADMIN",
 	"DEPT_OWNER",

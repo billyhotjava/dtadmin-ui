@@ -4,6 +4,7 @@ import { Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useCallback, useEffect, useState } from "react";
 import type { KeycloakGroup, KeycloakRole, KeycloakUser, UserProfileConfig } from "#/keycloak";
+import zhCN from "@/locales/lang/zh_CN";
 import { KeycloakGroupService, KeycloakUserProfileService, KeycloakUserService } from "@/api/services/keycloakService";
 import { Icon } from "@/components/icon";
 import { useParams, useRouter } from "@/routes/hooks";
@@ -13,7 +14,6 @@ import { Button } from "@/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui/card";
 
 import { getAttributeDisplayName } from "@/utils/translation";
-import ResetPasswordModal from "./reset-password-modal";
 import UserModal from "./user-modal";
 import { ApprovalStatus } from "./approval-status";
 
@@ -53,7 +53,7 @@ export default function UserDetail() {
 
 	// Modal状态
 	const [editModal, setEditModal] = useState(false);
-	const [resetPasswordModal, setResetPasswordModal] = useState(false);
+	// Removed reset password feature
 
 	// 加载UserProfile配置
 	const loadUserProfileConfig = useCallback(async () => {
@@ -99,9 +99,19 @@ export default function UserDetail() {
 	// 角色表格列定义
 	const roleColumns: ColumnsType<KeycloakRole> = [
 		{
-			title: "角色名称",
+			title: "角色编号",
 			dataIndex: "name",
 			key: "name",
+		},
+		{
+			title: "角色名称",
+			dataIndex: "name",
+			key: "displayName",
+			render: (_: string, record) => {
+				const code = (record.name ?? "").trim().toUpperCase();
+				const zhMap = (zhCN as any)?.sys?.admin?.role ?? {};
+				return zhMap[code] || record.description || record.name || "-";
+			},
 		},
 		{
 			title: "描述",
@@ -238,10 +248,7 @@ export default function UserDetail() {
 						<Icon icon="solar:pen-bold-duotone" size={16} className="mr-2" />
 						编辑
 					</Button>
-					<Button variant="outline" onClick={() => setResetPasswordModal(true)}>
-						<Icon icon="mdi:key-variant" size={16} className="mr-2" />
-						重置密码
-					</Button>
+					{/* Reset password feature removed */}
 				</div>
 			</div>
 
@@ -372,14 +379,7 @@ export default function UserDetail() {
 				}}
 			/>
 
-			{/* 重置密码Modal */}
-			<ResetPasswordModal
-				open={resetPasswordModal}
-				userId={user?.id || ""}
-				username={user?.username || ""}
-				onCancel={() => setResetPasswordModal(false)}
-				onSuccess={() => {}}
-			/>
+			{/* Reset password feature removed */}
 		</div>
 	);
 }

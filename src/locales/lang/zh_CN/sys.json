@@ -24,7 +24,7 @@
 			"errMsg505": "http版本不支持该请求!"
 		},
 		"login": {
-			"brandName": "数据管理平台(密级)",
+			"brandName": "数据管理平台系统端(密级)",
 			"brandIllustrationAlt": "科技氛围大数据平台插画",
 			"backSignIn": "返回",
 			"signInFormTitle": "登录到您的账户",
@@ -158,8 +158,14 @@
 				"index": "异常页",
 				"403": "403",
 				"404": "404",
-				"500": "500"
+				"500": "500",
+				"unexpected": "应用发生未预期错误",
+				"unknown": "未知错误"
 			}
+		},
+		"error": {
+			"unexpected": "应用发生未预期错误",
+			"unknown": "未知错误"
 		},
 		"docs": "文档",
 		"workbench": {
@@ -229,6 +235,7 @@
 			},
 			"role": {
 				"SYSADMIN": "系统管理员",
+				"OPADMIN": "业务运维管理员",
 				"AUTHADMIN": "授权管理员",
 				"AUDITADMIN": "审计管理员",
 				"DEPT_OWNER": "部门主管",

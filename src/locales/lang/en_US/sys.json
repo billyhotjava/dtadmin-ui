@@ -90,7 +90,9 @@
 				"403": "403",
 				"404": "404",
 				"500": "500",
-				"index": "Error Page"
+				"index": "Error Page",
+				"unexpected": "Unexpected Application Error!",
+				"unknown": "Unknown Error"
 			},
 			"external_link": "External Link",
 			"link": "Item External",
@@ -152,6 +154,10 @@
 				"index": "System Management",
 				"my_changes": "My Change Requests"
 			}
+		},
+		"error": {
+			"unexpected": "Unexpected Application Error!",
+			"unknown": "Unknown Error"
 		},
 		"workbench": {
 			"title": "Cluster Overview",
@@ -220,6 +226,7 @@
 			},
 			"role": {
 				"SYSADMIN": "System Administrator",
+				"OPADMIN": "Operations Administrator",
 				"AUTHADMIN": "Authorization Administrator",
 				"AUDITADMIN": "Audit Administrator",
 				"DEPT_OWNER": "Department Owner",

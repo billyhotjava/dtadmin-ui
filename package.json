@@ -6,7 +6,10 @@
 	"homepage": "https://github.com/d3george/slash-admin",
 	"scripts": {
 		"dev": "vite",
+		"predev": "node scripts/sync-portal-menus.mjs",
 		"build": "tsc && vite build",
+		"prebuild": "node scripts/sync-portal-menus.mjs",
+		"sync:portal-menus": "node scripts/sync-portal-menus.mjs",
 		"preview": "vite preview",
 		"preinstall": "lefthook install"
 	},

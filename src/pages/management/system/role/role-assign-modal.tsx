@@ -10,7 +10,7 @@ import { Label } from "@/ui/label";
 import { ScrollArea } from "@/ui/scroll-area";
 import { Text } from "@/ui/typography";
 
-const LOCKED_ADMIN_ROLES = new Set(["SYSADMIN", "AUTHADMIN", "AUDITADMIN"]);
+const LOCKED_ADMIN_ROLES = new Set(["SYSADMIN", "OPADMIN", "AUTHADMIN", "AUDITADMIN"]);
 
 interface RoleAssignModalProps {
 	open: boolean;

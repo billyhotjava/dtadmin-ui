@@ -4,8 +4,13 @@ import { toast } from "sonner";
 import type { CreateRoleRequest, KeycloakRole, UpdateRoleRequest } from "#/keycloak";
 import { KeycloakRoleService } from "@/api/services/keycloakService";
 import { DATA_SECURITY_LEVEL_OPTIONS } from "@/constants/governance";
-import menuService from "@/api/services/menuService";
 import type { MenuTree } from "#/entity";
+import { PermissionType } from "#/enum";
+import { adminApi } from "@/admin/api/adminApi";
+import type { PortalMenuItem } from "@/admin/types";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore - JSON import for mock i18n fallback
+import portalI18nZh from "@/_mock/data/portal-i18n-zh.json";
 import { Alert, AlertDescription } from "@/ui/alert";
 import { Button } from "@/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/ui/dialog";
@@ -47,6 +52,83 @@ export default function RoleModal({ open, mode, role, onCancel, onSuccess }: Rol
 	const [menuLoading, setMenuLoading] = useState(false);
 	const [selectedMenus, setSelectedMenus] = useState<Set<string>>(new Set());
 
+	// 将门户菜单（菜单管理的数据源）映射为 MenuTree，以保证一致性
+	const FALLBACK_PORTAL_ZH: Record<string, string> = {
+		"sys.nav.portal.overview": "总览",
+		"sys.nav.portal.overviewPlatform": "平台概览",
+		"sys.nav.portal.overviewTasks": "我的待办",
+		"sys.nav.portal.overviewShortcuts": "快捷入口",
+		"sys.nav.portal.catalog": "数据目录",
+		"sys.nav.portal.catalogDomains": "数据域与主题域",
+		"sys.nav.portal.catalogDatasets": "数据集清单",
+		"sys.nav.portal.catalogDictionary": "字段字典与业务术语",
+		"sys.nav.portal.catalogTags": "标签管理",
+		"sys.nav.portal.catalogClassification": "数据分级",
+		"sys.nav.portal.catalogLineage": "数据血缘",
+		"sys.nav.portal.catalogQuality": "数据质量概览",
+		"sys.nav.portal.modeling": "模型与标准",
+		"sys.nav.portal.modelingStandards": "数据标准",
+		"sys.nav.portal.governance": "治理与质量",
+		"sys.nav.portal.governanceRules": "质量规则",
+		"sys.nav.portal.governanceTasks": "质量任务与结果",
+		"sys.nav.portal.governanceMasking": "分级与脱敏策略",
+		"sys.nav.portal.governanceCompliance": "合规检查",
+		"sys.nav.portal.governanceImpact": "变更影响评估",
+		"sys.nav.portal.explore": "数据开发",
+		"sys.nav.portal.exploreWorkbench": "查询工作台",
+		"sys.nav.portal.explorePreview": "数据预览",
+		"sys.nav.portal.exploreSavedQueries": "已保存查询与模板",
+		"sys.nav.portal.exploreSharing": "结果集分享",
+		"sys.nav.portal.exploreExport": "导出中心",
+		"sys.nav.portal.visualization": "数据可视化",
+		"sys.nav.portal.visualizationReports": "数据报表",
+		"sys.nav.portal.services": "数据服务",
+		"sys.nav.portal.servicesApi": "API 服务",
+		"sys.nav.portal.servicesProxy": "JDBC/ODBC Proxy",
+		"sys.nav.portal.servicesProducts": "数据产品",
+		"sys.nav.portal.servicesTokens": "令牌与密钥",
+		"sys.nav.portal.servicesQuotas": "配额与限流",
+		"sys.nav.portal.iam": "权限与策略",
+		"sys.nav.portal.iamClassification": "密级模型映射",
+		"sys.nav.portal.iamAuthorization": "资源授权",
+		"sys.nav.portal.iamSimulation": "策略模拟与评估",
+		"sys.nav.portal.iamRequests": "权限申请入口",
+		"sys.nav.portal.settings": "个性化与设置",
+		"sys.nav.portal.settingsPreferences": "个人偏好",
+		"sys.nav.portal.settingsNotifications": "通知订阅",
+		"sys.nav.portal.settingsGateway": "网关策略",
+	};
+
+	function safeParseMetadata(metadata?: string) {
+		if (!metadata) return undefined as undefined | { icon?: string; titleKey?: string };
+		try {
+			return JSON.parse(metadata) as { icon?: string; titleKey?: string };
+		} catch {
+			return undefined;
+		}
+	}
+
+	const mapPortalMenusToMenuTree = (items: PortalMenuItem[]): MenuTree[] => {
+		const i18nMap = portalI18nZh as Record<string, string>;
+		return items.map((item) => {
+			const meta = safeParseMetadata(item.metadata);
+			const titleKey = meta?.titleKey;
+			const displayName =
+				titleKey && (i18nMap[titleKey] || FALLBACK_PORTAL_ZH[titleKey])
+					? i18nMap[titleKey] || FALLBACK_PORTAL_ZH[titleKey]
+					: item.name;
+			return {
+				id: String(item.id ?? item.path ?? item.name),
+				parentId: item.parentId ? String(item.parentId) : "",
+				name: displayName,
+				code: item.path ?? item.name,
+				order: item.sortOrder,
+				type: PermissionType.MENU,
+				children: item.children ? mapPortalMenusToMenuTree(item.children) : undefined,
+			};
+		});
+	};
+
 	// 初始化表单数据
 	useEffect(() => {
 		if (mode === "edit" && role) {
@@ -87,13 +169,13 @@ export default function RoleModal({ open, mode, role, onCancel, onSuccess }: Rol
 	useEffect(() => {
 		if (!open) return;
 		setMenuLoading(true);
-		menuService
-			.getMenuList()
-			.then((menuData) => {
-				setMenuTree(menuData ?? []);
+		adminApi
+			.getPortalMenus()
+			.then((menus) => {
+				setMenuTree(mapPortalMenusToMenuTree(menus ?? []));
 			})
 			.catch((err: any) => {
-				console.error("Failed to load menu list", err);
+				console.error("Failed to load portal menus for role editing", err);
 				toast.error("加载菜单数据失败，请稍后重试");
 			})
 			.finally(() => setMenuLoading(false));
