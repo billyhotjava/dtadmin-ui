@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { CreateRoleRequest, KeycloakRole, UpdateRoleRequest } from "#/keycloak";
 import { KeycloakRoleService } from "@/api/services/keycloakService";
+import { DATA_SECURITY_LEVEL_OPTIONS } from "@/constants/governance";
 import { Alert, AlertDescription } from "@/ui/alert";
 import { Button } from "@/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/ui/dialog";
@@ -22,7 +23,7 @@ interface FormData {
 	name: string;
 	description: string;
 	composite: boolean;
-	clientRole: boolean;
+	dataSecurityLevel: string;
 }
 
 export default function RoleModal({ open, mode, role, onCancel, onSuccess }: RoleModalProps) {
@@ -30,7 +31,7 @@ export default function RoleModal({ open, mode, role, onCancel, onSuccess }: Rol
 		name: "",
 		description: "",
 		composite: false,
-		clientRole: false,
+		dataSecurityLevel: "DATA_INTERNAL",
 	});
 
 	const [loading, setLoading] = useState(false);
@@ -43,14 +44,14 @@ export default function RoleModal({ open, mode, role, onCancel, onSuccess }: Rol
 				name: role.name || "",
 				description: role.description || "",
 				composite: role.composite ?? false,
-				clientRole: role.clientRole ?? false,
+				dataSecurityLevel: role.attributes?.dataSecurityLevel ?? "DATA_INTERNAL",
 			});
 		} else {
 			setFormData({
 				name: "",
 				description: "",
 				composite: false,
-				clientRole: false,
+				dataSecurityLevel: "DATA_INTERNAL",
 			});
 		}
 		setError("");
@@ -77,7 +78,7 @@ export default function RoleModal({ open, mode, role, onCancel, onSuccess }: Rol
 					name: formData.name,
 					description: formData.description,
 					composite: formData.composite,
-					clientRole: formData.clientRole,
+					attributes: { dataSecurityLevel: formData.dataSecurityLevel },
 				};
 
 				await KeycloakRoleService.createRole(createData);
@@ -87,7 +88,7 @@ export default function RoleModal({ open, mode, role, onCancel, onSuccess }: Rol
 					name: formData.name,
 					description: formData.description,
 					composite: formData.composite,
-					clientRole: formData.clientRole,
+					attributes: { ...role.attributes, dataSecurityLevel: formData.dataSecurityLevel },
 				};
 
 				await KeycloakRoleService.updateRole(role.name, updateData);
@@ -142,6 +143,28 @@ export default function RoleModal({ open, mode, role, onCancel, onSuccess }: Rol
 						/>
 					</div>
 
+					<div className="space-y-2">
+						<Label htmlFor="dataSecurityLevel">数据密级 *</Label>
+						<select
+							id="dataSecurityLevel"
+							className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+							value={formData.dataSecurityLevel}
+							onChange={(event) =>
+								setFormData((prev) => ({
+									...prev,
+									dataSecurityLevel: event.target.value,
+								}))
+							}
+						>
+							{DATA_SECURITY_LEVEL_OPTIONS.map((option) => (
+								<option key={option.value} value={option.value}>
+									{option.label}
+								</option>
+							))}
+						</select>
+						<p className="text-xs text-muted-foreground">请选择该角色可访问数据的最高密级。</p>
+					</div>
+
 					<div className="space-y-3">
 						<div className="flex items-center space-x-2">
 							<Switch
@@ -152,19 +175,6 @@ export default function RoleModal({ open, mode, role, onCancel, onSuccess }: Rol
 							<Label htmlFor="composite">复合角色</Label>
 						</div>
 						<p className="text-xs text-muted-foreground">复合角色可以包含其他角色</p>
-
-						<div className="flex items-center space-x-2">
-							<Switch
-								id="clientRole"
-								checked={formData.clientRole}
-								onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, clientRole: checked }))}
-								disabled={mode === "edit"} // 编辑模式下不允许修改类型
-							/>
-							<Label htmlFor="clientRole">客户端角色</Label>
-						</div>
-						<p className="text-xs text-muted-foreground">
-							{formData.clientRole ? "客户端角色属于特定客户端" : "Realm角色属于整个Realm"}
-						</p>
 					</div>
 				</div>
 

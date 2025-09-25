@@ -451,9 +451,11 @@ const keycloakHandlers = [
 		}
 		const payload = (await request.json()) as UpdateRoleRequest;
 		const current = keycloakDb.roles[index];
+		const nextAttributes = payload.attributes ? { ...current.attributes, ...payload.attributes } : current.attributes;
 		keycloakDb.roles[index] = {
 			...current,
 			...payload,
+			attributes: nextAttributes,
 			name: payload.name ?? current.name,
 		};
 		return ok(keycloakDb.roles[index], "角色更新成功");

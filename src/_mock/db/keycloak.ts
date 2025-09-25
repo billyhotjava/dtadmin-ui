@@ -8,7 +8,7 @@ const roles: KeycloakRole[] = [
 		composite: true,
 		clientRole: false,
 		containerId: "realm",
-		attributes: { category: "核心" },
+		attributes: { category: "核心", dataSecurityLevel: "DATA_TOP_SECRET" },
 	},
 	{
 		id: "role-authadmin",
@@ -17,6 +17,7 @@ const roles: KeycloakRole[] = [
 		composite: false,
 		clientRole: false,
 		containerId: "realm",
+		attributes: { dataSecurityLevel: "DATA_SECRET" },
 	},
 	{
 		id: "role-auditadmin",
@@ -25,6 +26,7 @@ const roles: KeycloakRole[] = [
 		composite: false,
 		clientRole: false,
 		containerId: "realm",
+		attributes: { dataSecurityLevel: "DATA_SECRET" },
 	},
 	{
 		id: "role-dept-owner",
@@ -33,6 +35,7 @@ const roles: KeycloakRole[] = [
 		composite: false,
 		clientRole: false,
 		containerId: "realm",
+		attributes: { dataSecurityLevel: "DATA_SECRET" },
 	},
 	{
 		id: "role-dept-editor",
@@ -41,6 +44,7 @@ const roles: KeycloakRole[] = [
 		composite: false,
 		clientRole: false,
 		containerId: "realm",
+		attributes: { dataSecurityLevel: "DATA_INTERNAL" },
 	},
 	{
 		id: "role-dept-viewer",
@@ -49,6 +53,7 @@ const roles: KeycloakRole[] = [
 		composite: false,
 		clientRole: false,
 		containerId: "realm",
+		attributes: { dataSecurityLevel: "DATA_PUBLIC" },
 	},
 	{
 		id: "role-inst-owner",
@@ -57,6 +62,7 @@ const roles: KeycloakRole[] = [
 		composite: false,
 		clientRole: false,
 		containerId: "realm",
+		attributes: { dataSecurityLevel: "DATA_TOP_SECRET" },
 	},
 	{
 		id: "role-inst-editor",
@@ -65,6 +71,7 @@ const roles: KeycloakRole[] = [
 		composite: false,
 		clientRole: false,
 		containerId: "realm",
+		attributes: { dataSecurityLevel: "DATA_SECRET" },
 	},
 	{
 		id: "role-inst-viewer",
@@ -73,6 +80,7 @@ const roles: KeycloakRole[] = [
 		composite: false,
 		clientRole: false,
 		containerId: "realm",
+		attributes: { dataSecurityLevel: "DATA_INTERNAL" },
 	},
 	{
 		id: "role-data-steward",
@@ -81,6 +89,7 @@ const roles: KeycloakRole[] = [
 		composite: false,
 		clientRole: false,
 		containerId: "realm",
+		attributes: { dataSecurityLevel: "DATA_INTERNAL" },
 	},
 ];
 

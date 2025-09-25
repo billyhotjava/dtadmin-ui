@@ -40,6 +40,25 @@ const getSingleAttributeValue = (attributes: Record<string, string[]> | undefine
 	return nonEmpty ?? values[0] ?? "";
 };
 
+const collectRoleNames = (user: KeycloakUser): string[] => {
+	const names = new Set<string>();
+	user.realmRoles?.forEach((role) => {
+		if (role) {
+			names.add(role);
+		}
+	});
+	if (user.clientRoles) {
+		Object.values(user.clientRoles).forEach((clientRoleList) => {
+			clientRoleList?.forEach((role) => {
+				if (role) {
+					names.add(role);
+				}
+			});
+		});
+	}
+	return Array.from(names);
+};
+
 export default function UserPage() {
 	const { push } = useRouter();
 	const pathname = usePathname();
@@ -98,6 +117,7 @@ export default function UserPage() {
 			const tableData: UserTableRow[] = usersData.map((user) => ({
 				...user,
 				key: user.id || user.username,
+				roleNames: collectRoleNames(user),
 			}));
 
 			setUsers(tableData);
@@ -185,6 +205,25 @@ export default function UserPage() {
 			render: (_: string[] | undefined, record) => {
 				const position = getSingleAttributeValue(record.attributes, "position").trim();
 				return position.length > 0 ? position : "-";
+			},
+		},
+		{
+			title: "角色",
+			dataIndex: "roleNames",
+			width: 220,
+			render: (roles: string[] | undefined) => {
+				if (!roles || roles.length === 0) {
+					return "-";
+				}
+				return (
+					<div className="flex flex-wrap gap-1">
+						{roles.map((role) => (
+							<Badge key={role} variant="outline">
+								{role}
+							</Badge>
+						))}
+					</div>
+				);
 			},
 		},
 		{
@@ -323,7 +362,7 @@ export default function UserPage() {
 						columns={columns}
 						dataSource={users}
 						loading={loading}
-						scroll={{ x: 1200 }}
+						scroll={{ x: 1400 }}
 						pagination={{
 							current: pagination.current,
 							pageSize: pagination.pageSize,

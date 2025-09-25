@@ -10,6 +10,8 @@ import { Button } from "@/ui/button";
 import { Card, CardContent, CardHeader } from "@/ui/card";
 import { Input } from "@/ui/input";
 import RoleModal from "./role-modal";
+import RoleAssignModal from "./role-assign-modal";
+import { DATA_SECURITY_LEVEL_LABELS } from "@/constants/governance";
 
 export default function RolePage() {
 	const [roles, setRoles] = useState<RoleTableRow[]>([]);
@@ -23,6 +25,11 @@ export default function RolePage() {
 		role?: KeycloakRole;
 	}>({ open: false, mode: "create" });
 
+	const [assignModal, setAssignModal] = useState<{
+		open: boolean;
+		role?: KeycloakRole;
+	}>({ open: false });
+
 	// 加载角色列表
 	const loadRoles = useCallback(async () => {
 		setLoading(true);
@@ -30,6 +37,7 @@ export default function RolePage() {
 			const rolesData = await KeycloakRoleService.getAllRealmRoles();
 
 			const tableData: RoleTableRow[] = rolesData
+				.filter((role) => !role.clientRole)
 				.filter((role) => {
 					if (!searchValue) return true;
 					return (
@@ -110,11 +118,6 @@ export default function RolePage() {
 										复合角色
 									</Badge>
 								) : null}
-								{record.clientRole ? (
-									<Badge variant="secondary" className="text-xs">
-										客户端角色
-									</Badge>
-								) : null}
 							</div>
 						</div>
 					</div>
@@ -127,13 +130,17 @@ export default function RolePage() {
 			render: (description: string) => description || "-",
 		},
 		{
-			title: "类型",
-			dataIndex: "clientRole",
+			title: "数据密级",
+			dataIndex: "attributes",
 			align: "center",
-			width: 120,
-			render: (clientRole: boolean) => (
-				<Badge variant={clientRole ? "secondary" : "default"}>{clientRole ? "客户端角色" : "Realm角色"}</Badge>
-			),
+			width: 140,
+			render: (_: KeycloakRole["attributes"], record) => {
+				const level = record.attributes?.dataSecurityLevel as keyof typeof DATA_SECURITY_LEVEL_LABELS | undefined;
+				if (!level) {
+					return "-";
+				}
+				return DATA_SECURITY_LEVEL_LABELS[level] ?? level;
+			},
 		},
 		{
 			title: "角色ID",
@@ -147,7 +154,7 @@ export default function RolePage() {
 			title: "操作",
 			key: "operation",
 			align: "center",
-			width: 120,
+			width: 180,
 			fixed: "right",
 			render: (_, record) => {
 				const name = record.name ?? "";
@@ -160,8 +167,18 @@ export default function RolePage() {
 					setRoleModal({ open: true, mode: "edit", role: record });
 				};
 				const onDelete = () => handleDelete(record);
+				const onAssign = () => {
+					if (!record.name) {
+						toast.error("角色信息缺失，无法分配");
+						return;
+					}
+					setAssignModal({ open: true, role: record });
+				};
 				return (
 					<div className="flex items-center justify-center gap-1">
+						<Button variant="ghost" size="sm" title="分配用户" onClick={onAssign}>
+							<Icon icon="mdi:account-plus" size={16} />
+						</Button>
 						<Button variant="ghost" size="sm" title="编辑角色" onClick={onEdit} disabled={builtIn}>
 							<Icon icon="solar:pen-bold-duotone" size={16} />
 						</Button>
@@ -254,6 +271,16 @@ export default function RolePage() {
 				onCancel={() => setRoleModal({ open: false, mode: "create" })}
 				onSuccess={() => {
 					setRoleModal({ open: false, mode: "create" });
+					loadRoles();
+				}}
+			/>
+
+			<RoleAssignModal
+				open={assignModal.open}
+				role={assignModal.role}
+				onCancel={() => setAssignModal({ open: false })}
+				onSuccess={() => {
+					setAssignModal({ open: false });
 					loadRoles();
 				}}
 			/>

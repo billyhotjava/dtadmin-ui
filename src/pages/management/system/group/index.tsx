@@ -33,7 +33,7 @@ export default function GroupPage() {
 	const [filteredTree, setFilteredTree] = useState<GroupTreeNode[]>([]);
 	const [expandedKeys, setExpandedKeys] = useState<Key[]>([]);
 	const [autoExpandParent, setAutoExpandParent] = useState(true);
-	const [selectedKeys, setSelectedKeys] = useState<Key[]>([]);
+	const [selectedKey, setSelectedKey] = useState<Key | null>(null);
 	const [selectedGroup, setSelectedGroup] = useState<GroupTableRow | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [searchValue, setSearchValue] = useState("");
@@ -59,7 +59,7 @@ export default function GroupPage() {
 
 	const loadGroups = useCallback(async () => {
 		setLoading(true);
-		const currentSelectedKey = selectedKeys[0];
+		const currentSelectedKey = selectedKey ?? null;
 		try {
 			const groupsData = await KeycloakGroupService.getAllGroups();
 			const allGroups = flattenGroups(groupsData);
@@ -87,20 +87,20 @@ export default function GroupPage() {
 			if (currentSelectedKey) {
 				const found = findNodeByKey(tree, currentSelectedKey);
 				if (found) {
-					setSelectedKeys([found.key]);
+					setSelectedKey((prev) => (prev === found.key ? prev : found.key));
 					setSelectedGroup(found.group);
 				} else if (tree[0]) {
-					setSelectedKeys([tree[0].key]);
+					setSelectedKey(tree[0].key);
 					setSelectedGroup(tree[0].group);
 				} else {
-					setSelectedKeys([]);
+					setSelectedKey(null);
 					setSelectedGroup(null);
 				}
 			} else if (tree[0]) {
-				setSelectedKeys([tree[0].key]);
+				setSelectedKey(tree[0].key);
 				setSelectedGroup(tree[0].group);
 			} else {
-				setSelectedKeys([]);
+				setSelectedKey(null);
 				setSelectedGroup(null);
 			}
 		} catch (error: any) {
@@ -109,7 +109,7 @@ export default function GroupPage() {
 		} finally {
 			setLoading(false);
 		}
-	}, [selectedKeys]);
+	}, [selectedKey]);
 
 	useEffect(() => {
 		if (!searchValue.trim()) {
@@ -194,9 +194,10 @@ export default function GroupPage() {
 											setExpandedKeys(keys);
 											setAutoExpandParent(false);
 										}}
-										selectedKeys={selectedKeys}
+										selectedKeys={selectedKey ? [selectedKey] : []}
 										onSelect={(keys, info) => {
-											setSelectedKeys(keys);
+											const nextKey = (keys[0] as Key | undefined) ?? null;
+											setSelectedKey(nextKey);
 											setSelectedGroup(info.node.group ?? null);
 										}}
 									/>
